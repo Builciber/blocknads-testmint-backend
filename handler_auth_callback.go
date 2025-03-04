@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -40,6 +41,7 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		fmt.Fprint(w, userGuildData)
 		roles, ok := userGuildData["roles"].([]string)
 		if !ok {
 			http.Error(w, "roles information absent", http.StatusInternalServerError)
