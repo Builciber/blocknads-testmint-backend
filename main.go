@@ -79,7 +79,7 @@ func main() {
 		Scopes:       []string{disgoauth.ScopeIdentify, "guilds.members.read"},
 	})
 	apiMux.Get("/auth", cfg.handler_auth(dc))
-	apiMux.Post("/auth/callback", cfg.handler_auth_callback(dc))
+	apiMux.Get("/auth/callback", cfg.handler_auth_callback(dc))
 	apiMux.Post("/register/raffle_minter", cfg.handler_register_raffle_minter)
 	apiMux.Post("/register/ticket_purchase", cfg.handler_register_ticket_purchase)
 	apiMux.Post("/register/whitelist_minter", cfg.handler_register_whitelist_minter)
