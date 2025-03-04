@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -51,7 +52,7 @@ func main() {
 	dbQueries := database.New(db)
 	apiMux := chi.NewRouter()
 	apiMux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://discord.com"},
+		AllowedOrigins:   []string{"https://*"},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"Link"},
@@ -74,7 +75,7 @@ func main() {
 	var dc *disgoauth.Client = disgoauth.Init(&disgoauth.Client{
 		ClientID:     clientId,
 		ClientSecret: clientSecret,
-		RedirectURI:  "http://0.0.0.0:8080/api/auth/callback",
+		RedirectURI:  fmt.Sprintf("https://%s/api/auth/callback", cfg.domain),
 		Scopes:       []string{disgoauth.ScopeIdentify, "guild.members.read"},
 	})
 	apiMux.Get("/auth", cfg.handler_auth(dc))
