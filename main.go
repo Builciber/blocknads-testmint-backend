@@ -23,6 +23,8 @@ type apiConfig struct {
 	signerPk      string
 	verfiedRoleId string
 	guildId       string
+	clientID      string
+	clientSecret  string
 	DB            *database.Queries
 	mut           *sync.RWMutex
 	oauthStates   map[string]bool
@@ -37,6 +39,8 @@ func main() {
 	signerPk := os.Getenv("SIGNER_PK")
 	verfiedRoleId := os.Getenv("VERIFIED_ROLE_ID")
 	guildId := os.Getenv("GUILD_ID")
+	clientId := os.Getenv("CLIENT_ID")
+	clientSecret := os.Getenv("CLIENT_SECRET")
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -64,11 +68,13 @@ func main() {
 		signerPk:      signerPk,
 		verfiedRoleId: verfiedRoleId,
 		guildId:       guildId,
+		clientID:      clientId,
+		clientSecret:  clientSecret,
 	}
 	var dc *disgoauth.Client = disgoauth.Init(&disgoauth.Client{
-		ClientID:     "883006609280864257",
-		ClientSecret: "X-9n0rEBywVu1KKKOQSHskRQM7L8UlOV",
-		RedirectURI:  "http://localhost:8080/api/auth/callback",
+		ClientID:     clientId,
+		ClientSecret: clientSecret,
+		RedirectURI:  "http://0.0.0.0:8080/api/auth/callback",
 		Scopes:       []string{disgoauth.ScopeIdentify, "guild.members.read"},
 	})
 	apiMux.Get("/auth", cfg.handler_auth(dc))
@@ -78,7 +84,7 @@ func main() {
 	apiMux.Post("/register/whitelist_minter", cfg.handler_register_whitelist_minter)
 	apiMux.Mount("/api/", apiMux)
 	server := http.Server{
-		Addr:    "localhost:8080",
+		Addr:    "0.0.0.0:8080",
 		Handler: apiMux,
 	}
 	log.Println("Starting server on localhost at port 8080")
