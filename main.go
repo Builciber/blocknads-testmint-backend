@@ -52,7 +52,7 @@ func main() {
 	dbQueries := database.New(db)
 	apiMux := chi.NewRouter()
 	apiMux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*"},
+		AllowedOrigins:   []string{"http://localhost:3000", "https://discord.com"},
 		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"Link"},
