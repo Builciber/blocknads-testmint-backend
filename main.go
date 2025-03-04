@@ -51,14 +51,6 @@ func main() {
 	}
 	dbQueries := database.New(db)
 	apiMux := chi.NewRouter()
-	apiMux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "https://discord.com"},
-		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}))
 	cfg := apiConfig{
 		chainID:       int64(chainID),
 		DB:            dbQueries,
@@ -72,6 +64,14 @@ func main() {
 		clientID:      clientId,
 		clientSecret:  clientSecret,
 	}
+	apiMux.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000", "https://discord.com", fmt.Sprintf("https://%s", cfg.domain)},
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
 	var dc *disgoauth.Client = disgoauth.Init(&disgoauth.Client{
 		ClientID:     clientId,
 		ClientSecret: clientSecret,
