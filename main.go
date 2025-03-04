@@ -65,8 +65,8 @@ func main() {
 		clientSecret:  clientSecret,
 	}
 	apiMux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "https://discord.com", fmt.Sprintf("https://%s", cfg.domain)},
-		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"HEAD", "GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
