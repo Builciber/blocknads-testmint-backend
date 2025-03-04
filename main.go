@@ -76,7 +76,7 @@ func main() {
 		ClientID:     clientId,
 		ClientSecret: clientSecret,
 		RedirectURI:  fmt.Sprintf("https://%s/api/auth/callback", cfg.domain),
-		Scopes:       []string{disgoauth.ScopeIdentify, "guild.members.read"},
+		Scopes:       []string{disgoauth.ScopeIdentify, "guilds.members.read"},
 	})
 	apiMux.Get("/auth", cfg.handler_auth(dc))
 	apiMux.Post("/auth/callback", cfg.handler_auth_callback(dc))
