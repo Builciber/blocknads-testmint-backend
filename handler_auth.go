@@ -32,7 +32,7 @@ func (cfg *apiConfig) handler_auth(dc *disgoauth.Client) http.HandlerFunc {
 		//If cookie was not found, we call Discord's authentication endpoint
 		b := make([]byte, 32)
 		rand.Read(b)
-		state := base64.StdEncoding.EncodeToString(b)
+		state := base64.URLEncoding.EncodeToString(b)
 		cfg.mut.Lock()
 		cfg.oauthStates[state] = true
 		cfg.mut.Unlock()
