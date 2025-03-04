@@ -1,0 +1,87 @@
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
+	"sync"
+
+	"github.com/Builciber/blocknads-testmint-backend/internal/database"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/joho/godotenv"
+	"github.com/realTristan/disgoauth"
+)
+
+type apiConfig struct {
+	chainID       int64
+	sessionSecret string
+	domain        string
+	signerPk      string
+	verfiedRoleId string
+	guildId       string
+	DB            *database.Queries
+	mut           *sync.RWMutex
+	oauthStates   map[string]bool
+}
+
+func main() {
+	godotenv.Load()
+	dbURL := os.Getenv("CONN")
+	sessionSecret := os.Getenv("SESSION_SECRET")
+	domain := os.Getenv("DOMAIN")
+	chainID, err := strconv.Atoi(os.Getenv("CHAIN_ID"))
+	signerPk := os.Getenv("SIGNER_PK")
+	verfiedRoleId := os.Getenv("VERIFIED_ROLE_ID")
+	guildId := os.Getenv("GUILD_ID")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	db, err := pgxpool.New(context.Background(), dbURL)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	dbQueries := database.New(db)
+	apiMux := chi.NewRouter()
+	apiMux.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://discord.com"},
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+	cfg := apiConfig{
+		chainID:       int64(chainID),
+		DB:            dbQueries,
+		sessionSecret: sessionSecret,
+		mut:           &sync.RWMutex{},
+		oauthStates:   make(map[string]bool),
+		domain:        domain,
+		signerPk:      signerPk,
+		verfiedRoleId: verfiedRoleId,
+		guildId:       guildId,
+	}
+	var dc *disgoauth.Client = disgoauth.Init(&disgoauth.Client{
+		ClientID:     "883006609280864257",
+		ClientSecret: "X-9n0rEBywVu1KKKOQSHskRQM7L8UlOV",
+		RedirectURI:  "http://localhost:8080/api/auth/callback",
+		Scopes:       []string{disgoauth.ScopeIdentify, "guild.members.read"},
+	})
+	apiMux.Get("/auth", cfg.handler_auth(dc))
+	apiMux.Post("/auth/callback", cfg.handler_auth_callback(dc))
+	apiMux.Post("/register/raffle_minter", cfg.handler_register_raffle_minter)
+	apiMux.Post("/register/ticket_purchase", cfg.handler_register_ticket_purchase)
+	apiMux.Post("/register/whitelist_minter", cfg.handler_register_whitelist_minter)
+	apiMux.Mount("/api/", apiMux)
+	server := http.Server{
+		Addr:    "localhost:8080",
+		Handler: apiMux,
+	}
+	log.Println("Starting server on localhost at port 8080")
+	err = server.ListenAndServe()
+	log.Fatal(err)
+}
