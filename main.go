@@ -27,6 +27,7 @@ type apiConfig struct {
 	clientID          string
 	clientSecret      string
 	clientCallbackURL string
+	clientOrigin      string
 	DB                *database.Queries
 	mut               *sync.RWMutex
 	oauthStates       map[string]bool
@@ -41,6 +42,7 @@ func main() {
 	signerPk := os.Getenv("SIGNER_PK")
 	verfiedRoleId := os.Getenv("VERIFIED_ROLE_ID")
 	clientCallbackURL := os.Getenv("CLIENT_CALLBACK_URL")
+	clientOrigin := os.Getenv("CLIENT_ORIGIN")
 	guildId := os.Getenv("GUILD_ID")
 	clientId := os.Getenv("CLIENT_ID")
 	clientSecret := os.Getenv("CLIENT_SECRET")
@@ -66,6 +68,7 @@ func main() {
 		clientID:          clientId,
 		clientSecret:      clientSecret,
 		clientCallbackURL: clientCallbackURL,
+		clientOrigin:      clientOrigin,
 	}
 	apiMux.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{cfg.clientCallbackURL},

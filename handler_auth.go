@@ -10,11 +10,6 @@ import (
 	"github.com/realTristan/disgoauth"
 )
 
-type discordAuthResp struct {
-	DiscordID string `json:"discord_id"`
-	Avatar    string `json:"avatar"`
-}
-
 func (cfg *apiConfig) handler_auth(dc *disgoauth.Client) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("mint-session")
