@@ -8,16 +8,30 @@ import (
 	"net/http"
 )
 
+type roleID struct {
+	RoleID string `json:"role_id"`
+}
+
+type user struct {
+	UserID string `json:"id"`
+	Avatar string `json:"avatar"`
+}
+
+type guildMember struct {
+	User  user     `json:"user"`
+	Roles []roleID `json:"roles"`
+}
+
 // The getUserGuildData() function is used to send an api
 // request to the discord/users/@me/guilds/{guild.id}/member endpoint with
 // the provided accessToken.
-func (cfg *apiConfig) getUserGuildData(token string) (map[string]interface{}, error) {
+func (cfg *apiConfig) getUserGuildData(token string) (guildMember, error) {
 	// Establish a new request object
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://discord.com/api/users/@me/guilds/%s/member", cfg.guildId), nil)
 
 	// Handle the error
 	if err != nil {
-		return map[string]interface{}{}, err
+		return guildMember{}, err
 	}
 	// Set the request object's headers
 	req.Header = http.Header{
@@ -37,21 +51,19 @@ func (cfg *apiConfig) getUserGuildData(token string) (map[string]interface{}, er
 
 		// Handle the read body error
 		if _err != nil {
-			return map[string]interface{}{}, _err
+			return guildMember{}, _err
 		}
 		// Handle http response error
-		return map[string]interface{}{},
+		return guildMember{},
 			fmt.Errorf("status: %d, code: %v, body: %s",
 				resp.StatusCode, err, string(body))
 	}
 
-	// Readable golang map used for storing
-	// the response body
-	var data map[string]interface{}
+	var data guildMember
 
 	// Handle the error
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return map[string]interface{}{}, err
+		return guildMember{}, err
 	}
 	return data, nil
 }
@@ -59,13 +71,13 @@ func (cfg *apiConfig) getUserGuildData(token string) (map[string]interface{}, er
 // The GetUserData() function is used to send an api
 // request to the discord/users/@me endpoint with
 // the provided accessToken.
-func GetUserData(token string) (map[string]interface{}, error) {
+func GetUserData(token string) (user, error) {
 	// Establish a new request object
 	req, err := http.NewRequest("GET", "https://discord.com/api/users/@me", nil)
 
 	// Handle the error
 	if err != nil {
-		return map[string]interface{}{}, err
+		return user{}, err
 	}
 	// Set the request object's headers
 	req.Header = http.Header{
@@ -85,21 +97,21 @@ func GetUserData(token string) (map[string]interface{}, error) {
 
 		// Handle the read body error
 		if _err != nil {
-			return map[string]interface{}{}, _err
+			return user{}, _err
 		}
 		// Handle http response error
-		return map[string]interface{}{},
+		return user{},
 			fmt.Errorf("status: %d, code: %v, body: %s",
 				resp.StatusCode, err, string(body))
 	}
 
 	// Readable golang map used for storing
 	// the response body
-	var data map[string]interface{}
+	var data user
 
 	// Handle the error
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return map[string]interface{}{}, err
+		return user{}, err
 	}
 	return data, nil
 }

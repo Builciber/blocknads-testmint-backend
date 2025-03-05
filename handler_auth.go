@@ -11,6 +11,7 @@ import (
 
 type discordAuthResp struct {
 	DiscordID string `json:"discord_id"`
+	Avatar    string `json:"avatar"`
 }
 
 func (cfg *apiConfig) handler_auth(dc *disgoauth.Client) http.HandlerFunc {
@@ -36,6 +37,9 @@ func (cfg *apiConfig) handler_auth(dc *disgoauth.Client) http.HandlerFunc {
 		cfg.mut.Lock()
 		cfg.oauthStates[state] = true
 		cfg.mut.Unlock()
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		dc.RedirectHandler(w, r, state)
 	}
 

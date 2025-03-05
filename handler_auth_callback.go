@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -26,30 +25,20 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		userData, err := GetUserData(accessToken)
+		user, err := GetUserData(accessToken)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		id, ok := userData["id"].(string)
-		if !ok {
-			http.Error(w, "unexpected ID type", http.StatusInternalServerError)
-			return
-		}
-		userGuildData, err := cfg.getUserGuildData(accessToken)
+		guildMemberData, err := cfg.getUserGuildData(accessToken)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Fprint(w, userGuildData)
-		roles, ok := userGuildData["roles"].([]string)
-		if !ok {
-			http.Error(w, "roles information absent", http.StatusInternalServerError)
-			return
-		}
+		roles := guildMemberData.Roles
 		ok = false
-		for _, e := range roles {
-			if e == cfg.verfiedRoleId {
+		for _, role := range roles {
+			if role.RoleID == cfg.verfiedRoleId {
 				ok = true
 				break
 			}
@@ -58,7 +47,7 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			http.Error(w, "ineligible user", http.StatusUnauthorized)
 			return
 		}
-		signedSessionToken, err := auth.CreateJWT(id, cfg.sessionSecret)
+		signedSessionToken, err := auth.CreateJWT(user.UserID, cfg.sessionSecret)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -68,14 +57,20 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			Value:      signedSessionToken,
 			Expires:    time.Now().UTC().Add(4 * time.Hour),
 			Domain:     cfg.domain,
-			Path:       "/auth/",
+			Path:       "/",
 			HttpOnly:   true,
 			Secure:     false,
 			SameSite:   http.SameSiteLaxMode,
 			RawExpires: time.Now().UTC().Add(4 * time.Hour).String(),
 		}
 		w.Header().Add("Set-Cookie", sessionCookie.String())
-		respondWithJSON(w, http.StatusOK, discordAuthResp{DiscordID: id})
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		respondWithJSON(w, http.StatusOK, discordAuthResp{
+			DiscordID: user.UserID,
+			Avatar:    user.Avatar,
+		})
 	}
 	return http.HandlerFunc(fn)
 }
