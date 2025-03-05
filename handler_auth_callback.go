@@ -38,7 +38,7 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 		roles := guildMemberData.Roles
 		ok = false
 		for _, role := range roles {
-			if role.RoleID == cfg.verfiedRoleId {
+			if role == roleID(cfg.verfiedRoleId) {
 				ok = true
 				break
 			}

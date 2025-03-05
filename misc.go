@@ -8,9 +8,7 @@ import (
 	"net/http"
 )
 
-type roleID struct {
-	RoleID string `json:"role_id"`
-}
+type roleID string
 
 type user struct {
 	UserID string `json:"id"`
