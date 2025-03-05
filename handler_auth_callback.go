@@ -23,6 +23,10 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 		delete(cfg.oauthStates, nonce)
 		cfg.mut.Unlock()
 		code := r.URL.Query().Get("code")
+		if code == "" {
+			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reaason=%s", cfg.clientCallbackURL, "authentication failed"), http.StatusFound)
+			return
+		}
 		accessToken, err := dc.GetOnlyAccessToken(code)
 		if err != nil {
 			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reaason=%s", cfg.clientCallbackURL, "internal server error"), http.StatusFound)
