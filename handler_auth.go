@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 
 	"github.com/Builciber/blocknads-testmint-backend/internal/auth"
@@ -21,13 +22,18 @@ func (cfg *apiConfig) handler_auth(dc *disgoauth.Client) http.HandlerFunc {
 			discordID, err := auth.ValidateJWT(cookie.Value, cfg.sessionSecret)
 			if err != nil {
 				if err.Error() == "session is invalid or expired" {
-					http.Error(w, err.Error(), http.StatusUnauthorized)
+					http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reaason=%s", cfg.clientCallbackURL, "unauthorized"), http.StatusFound)
 					return
 				}
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reaason=%s", cfg.clientCallbackURL, "internal server error"), http.StatusFound)
 				return
 			}
-			respondWithJSON(w, http.StatusAccepted, discordAuthResp{DiscordID: discordID})
+			minter, err := cfg.DB.GetWhitelistMinterById(r.Context(), discordID)
+			if err != nil {
+				http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reaason=%s", cfg.clientCallbackURL, "internal server error"), http.StatusFound)
+				return
+			}
+			http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s", cfg.clientCallbackURL, minter.DiscordUsername.String, minter.AvatarHash.String), http.StatusFound)
 			return
 		}
 		//If cookie was not found, we call Discord's authentication endpoint
@@ -37,9 +43,6 @@ func (cfg *apiConfig) handler_auth(dc *disgoauth.Client) http.HandlerFunc {
 		cfg.mut.Lock()
 		cfg.oauthStates[state] = true
 		cfg.mut.Unlock()
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		dc.RedirectHandler(w, r, state)
 	}
 

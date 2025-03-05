@@ -18,17 +18,18 @@ import (
 )
 
 type apiConfig struct {
-	chainID       int64
-	sessionSecret string
-	domain        string
-	signerPk      string
-	verfiedRoleId string
-	guildId       string
-	clientID      string
-	clientSecret  string
-	DB            *database.Queries
-	mut           *sync.RWMutex
-	oauthStates   map[string]bool
+	chainID           int64
+	sessionSecret     string
+	domain            string
+	signerPk          string
+	verfiedRoleId     string
+	guildId           string
+	clientID          string
+	clientSecret      string
+	clientCallbackURL string
+	DB                *database.Queries
+	mut               *sync.RWMutex
+	oauthStates       map[string]bool
 }
 
 func main() {
@@ -39,6 +40,7 @@ func main() {
 	chainID, err := strconv.Atoi(os.Getenv("CHAIN_ID"))
 	signerPk := os.Getenv("SIGNER_PK")
 	verfiedRoleId := os.Getenv("VERIFIED_ROLE_ID")
+	clientCallbackURL := os.Getenv("CLIENT_CALLBACK_URL")
 	guildId := os.Getenv("GUILD_ID")
 	clientId := os.Getenv("CLIENT_ID")
 	clientSecret := os.Getenv("CLIENT_SECRET")
@@ -52,20 +54,21 @@ func main() {
 	dbQueries := database.New(db)
 	apiMux := chi.NewRouter()
 	cfg := apiConfig{
-		chainID:       int64(chainID),
-		DB:            dbQueries,
-		sessionSecret: sessionSecret,
-		mut:           &sync.RWMutex{},
-		oauthStates:   make(map[string]bool),
-		domain:        domain,
-		signerPk:      signerPk,
-		verfiedRoleId: verfiedRoleId,
-		guildId:       guildId,
-		clientID:      clientId,
-		clientSecret:  clientSecret,
+		chainID:           int64(chainID),
+		DB:                dbQueries,
+		sessionSecret:     sessionSecret,
+		mut:               &sync.RWMutex{},
+		oauthStates:       make(map[string]bool),
+		domain:            domain,
+		signerPk:          signerPk,
+		verfiedRoleId:     verfiedRoleId,
+		guildId:           guildId,
+		clientID:          clientId,
+		clientSecret:      clientSecret,
+		clientCallbackURL: clientCallbackURL,
 	}
 	apiMux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowedOrigins:   []string{cfg.clientCallbackURL},
 		AllowedMethods:   []string{"HEAD", "GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"Link"},
@@ -82,7 +85,7 @@ func main() {
 	apiMux.Get("/auth/callback", cfg.handler_auth_callback(dc))
 	apiMux.Post("/register/raffle_minter", cfg.handler_register_raffle_minter)
 	apiMux.Post("/register/ticket_purchase", cfg.handler_register_ticket_purchase)
-	apiMux.Post("/register/whitelist_minter", cfg.handler_register_whitelist_minter)
+	apiMux.Post("/register/whitelistq_minter", cfg.handler_register_whitelist_minter)
 	apiMux.Mount("/api/", apiMux)
 	server := http.Server{
 		Addr:    "0.0.0.0:8080",

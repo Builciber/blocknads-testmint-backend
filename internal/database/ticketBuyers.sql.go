@@ -11,9 +11,24 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addRaffleMinterNonce = `-- name: AddRaffleMinterNonce :exec
+UPDATE ticketBuyers SET wallet_address = $2
+WHERE wallet_address = $1
+`
+
+type AddRaffleMinterNonceParams struct {
+	WalletAddress   string
+	WalletAddress_2 string
+}
+
+func (q *Queries) AddRaffleMinterNonce(ctx context.Context, arg AddRaffleMinterNonceParams) error {
+	_, err := q.db.Exec(ctx, addRaffleMinterNonce, arg.WalletAddress, arg.WalletAddress_2)
+	return err
+}
+
 const createTicketBuyer = `-- name: CreateTicketBuyer :exec
-INSERT INTO ticketBuyers(wallet_address, nonce, num_tickets, created_at)
-VALUES ($1, $2, $3, $4)
+INSERT INTO ticketBuyers(wallet_address, nonce, num_tickets, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type CreateTicketBuyerParams struct {
@@ -21,6 +36,7 @@ type CreateTicketBuyerParams struct {
 	Nonce         pgtype.Int2
 	NumTickets    int16
 	CreatedAt     pgtype.Timestamp
+	UpdatedAt     pgtype.Timestamp
 }
 
 func (q *Queries) CreateTicketBuyer(ctx context.Context, arg CreateTicketBuyerParams) error {
@@ -29,6 +45,7 @@ func (q *Queries) CreateTicketBuyer(ctx context.Context, arg CreateTicketBuyerPa
 		arg.Nonce,
 		arg.NumTickets,
 		arg.CreatedAt,
+		arg.UpdatedAt,
 	)
 	return err
 }

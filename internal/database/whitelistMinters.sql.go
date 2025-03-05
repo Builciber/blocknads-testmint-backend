@@ -11,23 +11,42 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addWhitelistMintWallet = `-- name: AddWhitelistMintWallet :exec
+UPDATE whitelistMinters SET wallet_address = $2
+WHERE discord_id = $1
+`
+
+type AddWhitelistMintWalletParams struct {
+	DiscordID     string
+	WalletAddress pgtype.Text
+}
+
+func (q *Queries) AddWhitelistMintWallet(ctx context.Context, arg AddWhitelistMintWalletParams) error {
+	_, err := q.db.Exec(ctx, addWhitelistMintWallet, arg.DiscordID, arg.WalletAddress)
+	return err
+}
+
 const createWhitelistMinter = `-- name: CreateWhitelistMinter :exec
-INSERT INTO whitelistMinters(discord_id, wallet_address, nonce, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO whitelistMinters(discord_id, discord_username, wallet_address, avatar_hash, nonce, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type CreateWhitelistMinterParams struct {
-	DiscordID     string
-	WalletAddress pgtype.Text
-	Nonce         int16
-	CreatedAt     pgtype.Timestamp
-	UpdatedAt     pgtype.Timestamp
+	DiscordID       string
+	DiscordUsername pgtype.Text
+	WalletAddress   pgtype.Text
+	AvatarHash      pgtype.Text
+	Nonce           int16
+	CreatedAt       pgtype.Timestamp
+	UpdatedAt       pgtype.Timestamp
 }
 
 func (q *Queries) CreateWhitelistMinter(ctx context.Context, arg CreateWhitelistMinterParams) error {
 	_, err := q.db.Exec(ctx, createWhitelistMinter,
 		arg.DiscordID,
+		arg.DiscordUsername,
 		arg.WalletAddress,
+		arg.AvatarHash,
 		arg.Nonce,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -36,7 +55,7 @@ func (q *Queries) CreateWhitelistMinter(ctx context.Context, arg CreateWhitelist
 }
 
 const getWhitelistMinterById = `-- name: GetWhitelistMinterById :one
-SELECT discord_id, wallet_address, nonce, created_at, updated_at FROM whitelistMinters
+SELECT discord_id, discord_username, wallet_address, avatar_hash, nonce, created_at, updated_at FROM whitelistMinters
 WHERE discord_id = $1
 `
 
@@ -45,10 +64,34 @@ func (q *Queries) GetWhitelistMinterById(ctx context.Context, discordID string) 
 	var i Whitelistminter
 	err := row.Scan(
 		&i.DiscordID,
+		&i.DiscordUsername,
 		&i.WalletAddress,
+		&i.AvatarHash,
 		&i.Nonce,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const updateWhitelistMinterAfterAuth = `-- name: UpdateWhitelistMinterAfterAuth :exec
+UPDATE whitelistMinters SET discord_username = $2, avatar_hash = $3, updated_at = $4
+WHERE discord_id = $1
+`
+
+type UpdateWhitelistMinterAfterAuthParams struct {
+	DiscordID       string
+	DiscordUsername pgtype.Text
+	AvatarHash      pgtype.Text
+	UpdatedAt       pgtype.Timestamp
+}
+
+func (q *Queries) UpdateWhitelistMinterAfterAuth(ctx context.Context, arg UpdateWhitelistMinterAfterAuthParams) error {
+	_, err := q.db.Exec(ctx, updateWhitelistMinterAfterAuth,
+		arg.DiscordID,
+		arg.DiscordUsername,
+		arg.AvatarHash,
+		arg.UpdatedAt,
+	)
+	return err
 }

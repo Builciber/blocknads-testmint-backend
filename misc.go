@@ -11,8 +11,9 @@ import (
 type roleID string
 
 type user struct {
-	UserID string `json:"id"`
-	Avatar string `json:"avatar"`
+	UserID   string `json:"id"`
+	UserName string `json:"username"`
+	Avatar   string `json:"avatar"`
 }
 
 type guildMember struct {

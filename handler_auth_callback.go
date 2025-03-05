@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/Builciber/blocknads-testmint-backend/internal/auth"
+	"github.com/Builciber/blocknads-testmint-backend/internal/database"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/realTristan/disgoauth"
 )
 
@@ -14,7 +17,7 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 		cfg.mut.Lock()
 		ok := cfg.oauthStates[nonce]
 		if !ok {
-			http.Error(w, "click-jacking suspected", http.StatusUnauthorized)
+			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reaason=%s", cfg.clientCallbackURL, "unknown state parameter"), http.StatusFound)
 			return
 		}
 		delete(cfg.oauthStates, nonce)
@@ -22,17 +25,17 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 		code := r.URL.Query().Get("code")
 		accessToken, err := dc.GetOnlyAccessToken(code)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reaason=%s", cfg.clientCallbackURL, "internal server error"), http.StatusFound)
 			return
 		}
 		user, err := GetUserData(accessToken)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reaason=%s", cfg.clientCallbackURL, "internal server error"), http.StatusFound)
 			return
 		}
 		guildMemberData, err := cfg.getUserGuildData(accessToken)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reaason=%s", cfg.clientCallbackURL, "internal server error"), http.StatusFound)
 			return
 		}
 		roles := guildMemberData.Roles
@@ -44,12 +47,12 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			}
 		}
 		if !ok {
-			http.Error(w, "ineligible user", http.StatusUnauthorized)
+			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reaason=%s", cfg.clientCallbackURL, "ineligible user"), http.StatusFound)
 			return
 		}
 		signedSessionToken, err := auth.CreateJWT(user.UserID, cfg.sessionSecret)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reaason=%s", cfg.clientCallbackURL, "internal server error"), http.StatusFound)
 			return
 		}
 		sessionCookie := http.Cookie{
@@ -64,13 +67,26 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			RawExpires: time.Now().UTC().Add(4 * time.Hour).String(),
 		}
 		w.Header().Add("Set-Cookie", sessionCookie.String())
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		respondWithJSON(w, http.StatusOK, discordAuthResp{
+		err = cfg.DB.UpdateWhitelistMinterAfterAuth(r.Context(), database.UpdateWhitelistMinterAfterAuthParams{
 			DiscordID: user.UserID,
-			Avatar:    user.Avatar,
+			DiscordUsername: pgtype.Text{
+				String: user.UserName,
+				Valid:  true,
+			},
+			AvatarHash: pgtype.Text{
+				String: user.Avatar,
+				Valid:  true,
+			},
+			UpdatedAt: pgtype.Timestamp{
+				Time:  time.Now(),
+				Valid: true,
+			},
 		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s", cfg.clientCallbackURL, user.UserName, user.Avatar), http.StatusFound)
 	}
 	return http.HandlerFunc(fn)
 }
