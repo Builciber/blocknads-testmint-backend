@@ -91,7 +91,7 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s", cfg.clientCallbackURL, user.UserName, user.Avatar), http.StatusFound)
+		http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s&userid=%s", cfg.clientCallbackURL, user.UserName, user.Avatar, user.UserID), http.StatusFound)
 	}
 	return http.HandlerFunc(fn)
 }

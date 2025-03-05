@@ -29,7 +29,7 @@ func (cfg *apiConfig) handler_auth(dc *disgoauth.Client) http.HandlerFunc {
 				http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
 				return
 			}
-			http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s", cfg.clientCallbackURL, minter.DiscordUsername.String, minter.AvatarHash.String), http.StatusFound)
+			http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s&userid=%s", cfg.clientCallbackURL, minter.DiscordUsername.String, minter.AvatarHash.String, minter.DiscordID), http.StatusFound)
 			return
 		}
 		//If cookie was not found, we call Discord's authentication endpoint
