@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/Builciber/blocknads-testmint-backend/internal/auth"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/realTristan/disgoauth"
 )
 
@@ -24,12 +25,12 @@ func (cfg *apiConfig) handler_auth(dc *disgoauth.Client) http.HandlerFunc {
 				http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
 				return
 			}
-			minter, err := cfg.DB.GetWhitelistMinterById(r.Context(), discordID)
+			minter, err := cfg.DB.GetWhitelistMinterById(r.Context(), pgtype.Text{String: discordID, Valid: true})
 			if err != nil {
 				http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
 				return
 			}
-			http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s&userid=%s", cfg.clientCallbackURL, minter.DiscordUsername.String, minter.AvatarHash.String, minter.DiscordID), http.StatusFound)
+			http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s&userid=%s", cfg.clientCallbackURL, minter.DiscordUsername.String, minter.AvatarHash.String, minter.DiscordID.String), http.StatusFound)
 			return
 		}
 		//If cookie was not found, we call Discord's authentication endpoint

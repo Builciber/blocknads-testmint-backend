@@ -17,7 +17,8 @@ type Ticketbuyer struct {
 }
 
 type Whitelistminter struct {
-	DiscordID       string
+	ID              pgtype.UUID
+	DiscordID       pgtype.Text
 	DiscordUsername pgtype.Text
 	WalletAddress   pgtype.Text
 	AvatarHash      pgtype.Text

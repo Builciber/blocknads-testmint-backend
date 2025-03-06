@@ -8,7 +8,7 @@ import (
 
 func CreateJWT(discordUserID string, sessionSecret string) (string, error) {
 	currentTimeInUTC := time.Now().UTC()
-	expirationTimeinUTC := currentTimeInUTC.Add(4 * time.Hour)
+	expirationTimeinUTC := currentTimeInUTC.Add(30 * time.Minute)
 	sessionClaims := &jwt.RegisteredClaims{
 		Issuer:    "mint-session",
 		IssuedAt:  jwt.NewNumericDate(currentTimeInUTC),

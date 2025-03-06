@@ -70,6 +70,10 @@ func main() {
 		clientCallbackURL: clientCallbackURL,
 		clientOrigin:      clientOrigin,
 	}
+	err = cfg.writeNonceToDB(99)
+	if err != nil {
+		log.Fatal(err)
+	}
 	apiMux.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{cfg.clientOrigin},
 		AllowedMethods:   []string{"HEAD", "GET", "POST", "OPTIONS"},
@@ -86,9 +90,10 @@ func main() {
 	})
 	apiMux.Get("/auth", cfg.handler_auth(dc))
 	apiMux.Get("/auth/callback", cfg.handler_auth_callback(dc))
+	apiMux.Get("/auth/logout", cfg.handler_logout)
 	apiMux.Post("/register/raffle_minter", cfg.handler_register_raffle_minter)
 	apiMux.Post("/register/ticket_purchase", cfg.handler_register_ticket_purchase)
-	apiMux.Post("/register/whitelistq_minter", cfg.handler_register_whitelist_minter)
+	apiMux.Post("/register/whitelist_minter", cfg.handler_register_whitelist_minter)
 	apiMux.Mount("/api/", apiMux)
 	server := http.Server{
 		Addr:    "0.0.0.0:8080",

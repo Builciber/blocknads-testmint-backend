@@ -2,10 +2,16 @@ package main
 
 // Import Packages
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/Builciber/blocknads-testmint-backend/internal/database"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type roleID string
@@ -113,4 +119,44 @@ func GetUserData(token string) (user, error) {
 		return user{}, err
 	}
 	return data, nil
+}
+
+func (cfg *apiConfig) writeNonceToDB(numNonces int) error {
+	ok, err := cfg.DB.IsNonceColumnFilled(context.Background())
+	if ok {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	params := make([]database.CreateNoncesParams, numNonces)
+	var nonce int16
+	for i := 0; i < numNonces; i++ {
+		id, err := uuid.NewRandom()
+		if err != nil {
+			return err
+		}
+		currentTime := time.Now()
+		params[i] = database.CreateNoncesParams{
+			ID: pgtype.UUID{
+				Bytes: id,
+				Valid: true,
+			},
+			Nonce: nonce,
+			CreatedAt: pgtype.Timestamp{
+				Time:  currentTime,
+				Valid: true,
+			},
+			UpdatedAt: pgtype.Timestamp{
+				Time:  currentTime,
+				Valid: true,
+			},
+		}
+		nonce++
+	}
+	_, err = cfg.DB.CreateNonces(context.Background(), params)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/Builciber/blocknads-testmint-backend/internal/auth"
 	"github.com/chenzhijie/go-web3/utils"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type registerWhitelistMintersReq struct {
@@ -54,9 +55,13 @@ func (cfg *apiConfig) handler_register_whitelist_minter(w http.ResponseWriter, r
 		http.Error(w, "Invalid wallet address", http.StatusBadRequest)
 		return
 	}
-	minter, err := cfg.DB.GetWhitelistMinterById(r.Context(), discordID)
+	minter, err := cfg.DB.GetWhitelistMinterById(r.Context(), pgtype.Text{String: discordID, Valid: true})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !(!minter.WalletAddress.Valid || minter.WalletAddress.String == reqBody.WalletAddress) {
+		http.Error(w, "only one wallet per discord account", http.StatusNotAcceptable)
 		return
 	}
 	pk, err := crypto.HexToECDSA(cfg.signerPk)
@@ -81,6 +86,7 @@ func (cfg *apiConfig) handler_register_whitelist_minter(w http.ResponseWriter, r
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	respondWithJSON(w, http.StatusOK, registerWhitelistMintersResp{
 		Signature: hex.EncodeToString(sig),
 		DiscordID: idAsUint,

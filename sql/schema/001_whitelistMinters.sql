@@ -1,6 +1,7 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS whitelistMinters (
-    discord_id VARCHAR(64) PRIMARY KEY,
+    id UUID PRIMARY KEY,
+    discord_id VARCHAR(64),
     discord_username VARCHAR(64),
     wallet_address CHAR(42) UNIQUE,
     avatar_hash char(64) UNIQUE,

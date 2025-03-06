@@ -52,7 +52,7 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			}
 		}
 		if !ok {
-			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("ineligible user")), http.StatusFound)
+			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&username=%s&avatar=%s&userid=%s&reason=%s", cfg.clientCallbackURL, user.UserName, user.Avatar, user.UserID, url.QueryEscape("ineligible user")), http.StatusFound)
 			return
 		}
 		signedSessionToken, err := auth.CreateJWT(user.UserID, cfg.sessionSecret)
@@ -63,17 +63,20 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 		sessionCookie := http.Cookie{
 			Name:       "mint-session",
 			Value:      signedSessionToken,
-			Expires:    time.Now().UTC().Add(4 * time.Hour),
+			Expires:    time.Now().UTC().Add(30 * time.Minute),
 			Domain:     cfg.domain,
 			Path:       "/",
 			HttpOnly:   true,
 			Secure:     false,
 			SameSite:   http.SameSiteLaxMode,
-			RawExpires: time.Now().UTC().Add(4 * time.Hour).String(),
+			RawExpires: time.Now().UTC().Add(30 * time.Minute).String(),
 		}
 		w.Header().Add("Set-Cookie", sessionCookie.String())
 		err = cfg.DB.UpdateWhitelistMinterAfterAuth(r.Context(), database.UpdateWhitelistMinterAfterAuthParams{
-			DiscordID: user.UserID,
+			DiscordID: pgtype.Text{
+				String: user.UserID,
+				Valid:  true,
+			},
 			DiscordUsername: pgtype.Text{
 				String: user.UserName,
 				Valid:  true,
@@ -88,7 +91,7 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			},
 		})
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
 			return
 		}
 		http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s&userid=%s", cfg.clientCallbackURL, user.UserName, user.Avatar, user.UserID), http.StatusFound)
