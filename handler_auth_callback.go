@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/Builciber/blocknads-testmint-backend/internal/auth"
@@ -73,7 +71,16 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			SameSite:   http.SameSiteLaxMode,
 			RawExpires: time.Now().UTC().Add(30 * time.Minute).String(),
 		}
-		w.Header().Add("Set-Cookie", sessionCookie.String())
+		ok, err = cfg.DB.IsExistingUser(r.Context(), pgtype.Text{String: user.UserID, Valid: true})
+		if err != nil {
+			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
+			return
+		}
+		if ok {
+			w.Header().Add("Set-Cookie", sessionCookie.String())
+			http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s&userid=%s", cfg.clientCallbackURL, user.UserName, user.Avatar, user.UserID), http.StatusFound)
+			return
+		}
 		err = cfg.DB.UpdateWhitelistMinterAfterAuth(r.Context(), database.UpdateWhitelistMinterAfterAuthParams{
 			DiscordID: pgtype.Text{
 				String: user.UserID,
@@ -93,14 +100,10 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			},
 		})
 		if err != nil {
-			if strings.Contains(err.Error(), "unique constraint") {
-				http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s&userid=%s", cfg.clientCallbackURL, user.UserName, user.Avatar, user.UserID), http.StatusFound)
-				log.Println(err.Error())
-				return
-			}
 			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
 			return
 		}
+		w.Header().Add("Set-Cookie", sessionCookie.String())
 		http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s&userid=%s", cfg.clientCallbackURL, user.UserName, user.Avatar, user.UserID), http.StatusFound)
 	}
 	return http.HandlerFunc(fn)

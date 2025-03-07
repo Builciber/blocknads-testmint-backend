@@ -23,6 +23,7 @@ type Whitelistminter struct {
 	WalletAddress   pgtype.Text
 	AvatarHash      pgtype.Text
 	Nonce           int16
+	NonceUsed       bool
 	CreatedAt       pgtype.Timestamp
 	UpdatedAt       pgtype.Timestamp
 }

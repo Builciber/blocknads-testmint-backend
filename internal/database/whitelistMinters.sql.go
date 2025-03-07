@@ -50,7 +50,7 @@ type CreateNoncesParams struct {
 }
 
 const getWhitelistMinterById = `-- name: GetWhitelistMinterById :one
-SELECT id, discord_id, discord_username, wallet_address, avatar_hash, nonce, created_at, updated_at FROM whitelistMinters
+SELECT id, discord_id, discord_username, wallet_address, avatar_hash, nonce, nonce_used, created_at, updated_at FROM whitelistMinters
 WHERE discord_id = $1
 `
 
@@ -64,10 +64,22 @@ func (q *Queries) GetWhitelistMinterById(ctx context.Context, discordID pgtype.T
 		&i.WalletAddress,
 		&i.AvatarHash,
 		&i.Nonce,
+		&i.NonceUsed,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const isExistingUser = `-- name: IsExistingUser :one
+SELECT EXISTS (SELECT 1 FROM whitelistMinters WHERE whitelistMinters.discord_id = $1)
+`
+
+func (q *Queries) IsExistingUser(ctx context.Context, discordID pgtype.Text) (bool, error) {
+	row := q.db.QueryRow(ctx, isExistingUser, discordID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const isNonceColumnFilled = `-- name: IsNonceColumnFilled :one
