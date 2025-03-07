@@ -63,10 +63,6 @@ func (cfg *apiConfig) handler_register_whitelist_minter(w http.ResponseWriter, r
 		http.Error(w, "only one wallet per discord account", http.StatusNotAcceptable)
 		return
 	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	idAsUint, err := strconv.ParseUint(discordID, 10, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
