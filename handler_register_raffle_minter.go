@@ -7,8 +7,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/chenzhijie/go-web3/utils"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/chenzhijie/go-web3"
 )
 
 type registerRaffletMinterReq struct {
@@ -46,19 +45,22 @@ func (cfg *apiConfig) handler_register_raffle_minter(w http.ResponseWriter, r *h
 		http.Error(w, "ineligible user", http.StatusForbidden)
 		return
 	}
-	pk, err := crypto.HexToECDSA(cfg.signerPk)
+	wb, err := web3.NewWeb3(cfg.rpcUrl)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	util := utils.Utils{}
-	msg, err := util.EncodeParameters([]string{"uint256", "address", "uint256"}, []any{minter.Nonce, reqBody.WalletAddress, cfg.chainID})
+	err = wb.Eth.SetAccount(cfg.signerPk)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	msgHash := crypto.Keccak256(msg)
-	sig, err := crypto.Sign(msgHash, pk)
+	msg, err := wb.Utils.EncodeParameters([]string{"uint256", "address", "uint256"}, []any{minter.Nonce, reqBody.WalletAddress, cfg.chainID})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	sig, err := wb.Eth.SignText(msg)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

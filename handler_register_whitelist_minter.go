@@ -9,8 +9,7 @@ import (
 	"strconv"
 
 	"github.com/Builciber/blocknads-testmint-backend/internal/auth"
-	"github.com/chenzhijie/go-web3/utils"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/chenzhijie/go-web3"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -64,7 +63,6 @@ func (cfg *apiConfig) handler_register_whitelist_minter(w http.ResponseWriter, r
 		http.Error(w, "only one wallet per discord account", http.StatusNotAcceptable)
 		return
 	}
-	pk, err := crypto.HexToECDSA(cfg.signerPk)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -74,14 +72,22 @@ func (cfg *apiConfig) handler_register_whitelist_minter(w http.ResponseWriter, r
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	util := utils.Utils{}
-	msg, err := util.EncodeParameters([]string{"uint256", "uint64", "address", "uint256"}, []any{minter.Nonce, idAsUint, reqBody.WalletAddress, cfg.chainID})
+	wb, err := web3.NewWeb3(cfg.rpcUrl)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	msgHash := crypto.Keccak256(msg)
-	sig, err := crypto.Sign(msgHash, pk)
+	err = wb.Eth.SetAccount(cfg.signerPk)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	msg, err := wb.Utils.EncodeParameters([]string{"uint256", "uint64", "address", "uint256"}, []any{minter.Nonce, idAsUint, reqBody.WalletAddress, cfg.chainID})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	sig, err := wb.Eth.SignText(msg)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

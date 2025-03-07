@@ -6,10 +6,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Builciber/blocknads-testmint-backend/internal/database"
+	"github.com/chenzhijie/go-web3"
+	"github.com/chenzhijie/go-web3/types"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -159,4 +165,42 @@ func (cfg *apiConfig) writeNonceToDB(numNonces int) error {
 		return err
 	}
 	return nil
+}
+
+func pollContractEvent(cfg *apiConfig, interval time.Duration) {
+	tickChan := time.NewTicker(interval).C
+	log.Println("Started contract event polling")
+	w, err := web3.NewWeb3(cfg.rpcUrl)
+	w.Eth.SetChainId(cfg.chainID)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	startBlockasHexStr := "0x" + strconv.FormatUint(cfg.wlMintStartBlock, 16)
+	toBlock := cfg.wlMintStartBlock + 9
+	eventSignature := "Minted(address,uint256)"
+	topicOne := crypto.Keccak256([]byte(eventSignature))
+	for range tickChan {
+		filter := types.Fliter{
+			Address:   common.HexToAddress(cfg.contractAddress),
+			FromBlock: startBlockasHexStr,
+			ToBlock:   "0x" + strconv.FormatUint(toBlock, 16),
+			Topics:    []string{common.Bytes2Hex(topicOne)},
+		}
+		events, err := w.Eth.GetLogs(&filter)
+		if err != nil {
+			continue
+		}
+		addresses := make([]string, len(events))
+		for i, event := range events {
+			params, err := w.Utils.DecodeParameters([]string{"address, uint256"}, []byte(event.Data))
+			if err != nil {
+				continue
+			}
+			minterAddress, ok := params[0].(string)
+			if !ok {
+				continue
+			}
+			addresses[i] = minterAddress
+		}
+	}
 }

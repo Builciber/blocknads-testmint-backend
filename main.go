@@ -19,6 +19,7 @@ import (
 
 type apiConfig struct {
 	chainID           int64
+	wlMintStartBlock  uint64
 	sessionSecret     string
 	domain            string
 	signerPk          string
@@ -28,6 +29,8 @@ type apiConfig struct {
 	clientSecret      string
 	clientCallbackURL string
 	clientOrigin      string
+	rpcUrl            string
+	contractAddress   string
 	DB                *database.Queries
 	mut               *sync.RWMutex
 	oauthStates       map[string]bool
@@ -38,7 +41,6 @@ func main() {
 	dbURL := os.Getenv("CONN")
 	sessionSecret := os.Getenv("SESSION_SECRET")
 	domain := os.Getenv("DOMAIN")
-	chainID, err := strconv.Atoi(os.Getenv("CHAIN_ID"))
 	signerPk := os.Getenv("SIGNER_PK")
 	verfiedRoleId := os.Getenv("VERIFIED_ROLE_ID")
 	clientCallbackURL := os.Getenv("CLIENT_CALLBACK_URL")
@@ -46,6 +48,13 @@ func main() {
 	guildId := os.Getenv("GUILD_ID")
 	clientId := os.Getenv("CLIENT_ID")
 	clientSecret := os.Getenv("CLIENT_SECRET")
+	rpcUrl := os.Getenv("RPC_URL")
+	contractAddress := os.Getenv("CONTRACT_ADDRESS")
+	chainID, err := strconv.Atoi(os.Getenv("CHAIN_ID"))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	wlMintStartBlock, err := strconv.ParseUint(os.Getenv("WL_MINT_START_BLOCK"), 10, 0)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -69,6 +78,9 @@ func main() {
 		clientSecret:      clientSecret,
 		clientCallbackURL: clientCallbackURL,
 		clientOrigin:      clientOrigin,
+		rpcUrl:            rpcUrl,
+		wlMintStartBlock:  wlMintStartBlock,
+		contractAddress:   contractAddress,
 	}
 	err = cfg.writeNonceToDB(99)
 	if err != nil {
