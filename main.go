@@ -109,8 +109,8 @@ func main() {
 	apiMux.Post("/register/raffle_minter", cfg.handler_register_raffle_minter)
 	apiMux.Post("/register/ticket_purchase", cfg.handler_register_ticket_purchase)
 	apiMux.Post("/register/whitelist_minter", cfg.handler_register_whitelist_minter)
-	apiMux.Post("/test/whitelistMint", cfg.handlerWhitelistMintTest)
-	apiMux.Get("/test/issueSessionToken", cfg.handlerIssueSessionToken())
+	//apiMux.Post("/test/whitelistMint", cfg.handlerWhitelistMintTest)
+	//apiMux.Get("/test/issueSessionToken", cfg.handlerIssueSessionToken())
 	apiMux.Mount("/api/", apiMux)
 	server := http.Server{
 		Addr:    "0.0.0.0:8080",
