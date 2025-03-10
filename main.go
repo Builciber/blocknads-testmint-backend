@@ -31,6 +31,7 @@ type apiConfig struct {
 	clientOrigin      string
 	rpcUrl            string
 	contractAddress   string
+	ownerPK           string
 	DB                *database.Queries
 	mut               *sync.RWMutex
 	oauthStates       map[string]bool
@@ -50,6 +51,7 @@ func main() {
 	clientSecret := os.Getenv("CLIENT_SECRET")
 	rpcUrl := os.Getenv("RPC_URL")
 	contractAddress := os.Getenv("CONTRACT_ADDRESS")
+	ownerPK := os.Getenv("OWNER_PK")
 	chainID, err := strconv.Atoi(os.Getenv("CHAIN_ID"))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -79,6 +81,7 @@ func main() {
 		clientCallbackURL: clientCallbackURL,
 		clientOrigin:      clientOrigin,
 		rpcUrl:            rpcUrl,
+		ownerPK:           ownerPK,
 		wlMintStartBlock:  wlMintStartBlock,
 		contractAddress:   contractAddress,
 	}
@@ -87,7 +90,7 @@ func main() {
 		log.Fatal(err)
 	}
 	apiMux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{cfg.clientOrigin},
+		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"HEAD", "GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"Link"},
@@ -106,6 +109,8 @@ func main() {
 	apiMux.Post("/register/raffle_minter", cfg.handler_register_raffle_minter)
 	apiMux.Post("/register/ticket_purchase", cfg.handler_register_ticket_purchase)
 	apiMux.Post("/register/whitelist_minter", cfg.handler_register_whitelist_minter)
+	apiMux.Post("/test/whitelistMint", cfg.handlerWhitelistMintTest)
+	apiMux.Get("/test/issueSessionToken", cfg.handlerIssueSessionToken())
 	apiMux.Mount("/api/", apiMux)
 	server := http.Server{
 		Addr:    "0.0.0.0:8080",
