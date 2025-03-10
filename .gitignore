@@ -1,2 +1,5 @@
 .env
-./out
+out
+blocknadsABI.go
+whitelistMintTest.go
+issueSessionTokenTest.go

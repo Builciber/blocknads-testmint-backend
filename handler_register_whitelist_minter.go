@@ -4,12 +4,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"math/big"
 	"net/http"
 	"regexp"
 	"strconv"
 
 	"github.com/Builciber/blocknads-testmint-backend/internal/auth"
+	"github.com/Builciber/blocknads-testmint-backend/internal/database"
 	"github.com/chenzhijie/go-web3"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -60,7 +64,7 @@ func (cfg *apiConfig) handler_register_whitelist_minter(w http.ResponseWriter, r
 		return
 	}
 	if !(!minter.WalletAddress.Valid || minter.WalletAddress.String == reqBody.WalletAddress) {
-		http.Error(w, "only one wallet per discord account", http.StatusNotAcceptable)
+		http.Error(w, "only one wallet per discord user", http.StatusNotAcceptable)
 		return
 	}
 	idAsUint, err := strconv.ParseUint(discordID, 10, 64)
@@ -73,22 +77,39 @@ func (cfg *apiConfig) handler_register_whitelist_minter(w http.ResponseWriter, r
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	wb.Eth.SetChainId(cfg.chainID)
 	err = wb.Eth.SetAccount(cfg.signerPk)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	msg, err := wb.Utils.EncodeParameters([]string{"uint256", "uint64", "address", "uint256"}, []any{minter.Nonce, idAsUint, reqBody.WalletAddress, cfg.chainID})
+	msg, err := wb.Utils.EncodeParameters([]string{"uint256", "uint64", "address", "uint256"}, []any{big.NewInt(int64(minter.Nonce)), idAsUint, common.HexToAddress(reqBody.WalletAddress), big.NewInt(cfg.chainID)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sig, err := wb.Eth.SignText(msg)
+	msgHash := crypto.Keccak256(msg)
+	sig, err := wb.Eth.SignText(msgHash)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	if !minter.WalletAddress.Valid {
+		err = cfg.DB.AddWhitelistMintWallet(r.Context(), database.AddWhitelistMintWalletParams{
+			DiscordID: pgtype.Text{
+				String: discordID,
+				Valid:  true,
+			},
+			WalletAddress: pgtype.Text{
+				String: reqBody.WalletAddress,
+				Valid:  true,
+			},
+		})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 	respondWithJSON(w, http.StatusOK, registerWhitelistMintersResp{
 		Signature: hex.EncodeToString(sig),
 		DiscordID: idAsUint,
