@@ -90,7 +90,7 @@ func main() {
 		log.Fatal(err)
 	}
 	apiMux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{cfg.clientCallbackURL},
+		AllowedOrigins:   []string{cfg.clientOrigin},
 		AllowedMethods:   []string{"HEAD", "GET", "POST", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		ExposedHeaders:   []string{"Link"},
