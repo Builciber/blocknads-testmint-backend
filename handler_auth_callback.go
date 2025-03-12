@@ -67,8 +67,8 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 			Domain:     cfg.domain,
 			Path:       "/",
 			HttpOnly:   true,
-			Secure:     false,
-			SameSite:   http.SameSiteLaxMode,
+			Secure:     true,
+			SameSite:   http.SameSiteNoneMode,
 			RawExpires: time.Now().UTC().Add(30 * time.Minute).String(),
 		}
 		ok, err = cfg.DB.IsExistingUser(r.Context(), pgtype.Text{String: user.UserID, Valid: true})
