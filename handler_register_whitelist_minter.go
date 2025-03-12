@@ -18,7 +18,7 @@ import (
 )
 
 type registerWhitelistMintersReq struct {
-	WalletAddress string `json:"wallet_address"`
+	WalletAddress string `json:"walletAddress"`
 }
 
 type registerWhitelistMintersResp struct {
