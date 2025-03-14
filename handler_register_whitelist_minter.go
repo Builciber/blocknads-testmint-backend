@@ -22,7 +22,7 @@ type registerWhitelistMintersReq struct {
 }
 
 type registerWhitelistMintersResp struct {
-	DiscordID uint64 `json:"discord_id"`
+	DiscordID uint64 `json:"id"`
 	Nonce     int16  `json:"nonce"`
 	Signature string `json:"signature"`
 }
