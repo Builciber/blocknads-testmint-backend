@@ -111,7 +111,7 @@ func (cfg *apiConfig) handler_register_whitelist_minter(w http.ResponseWriter, r
 		}
 	}
 	respondWithJSON(w, http.StatusOK, registerWhitelistMintersResp{
-		Signature: hex.EncodeToString(sig),
+		Signature: "0x" + hex.EncodeToString(sig),
 		DiscordID: discordID,
 		Nonce:     minter.Nonce,
 	})
