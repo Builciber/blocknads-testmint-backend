@@ -22,7 +22,7 @@ type registerWhitelistMintersReq struct {
 }
 
 type registerWhitelistMintersResp struct {
-	DiscordID uint64 `json:"id"`
+	DiscordID string `json:"id"`
 	Nonce     int16  `json:"nonce"`
 	Signature string `json:"signature"`
 }
@@ -112,7 +112,7 @@ func (cfg *apiConfig) handler_register_whitelist_minter(w http.ResponseWriter, r
 	}
 	respondWithJSON(w, http.StatusOK, registerWhitelistMintersResp{
 		Signature: hex.EncodeToString(sig),
-		DiscordID: idAsUint,
+		DiscordID: discordID,
 		Nonce:     minter.Nonce,
 	})
 }
