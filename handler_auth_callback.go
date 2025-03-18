@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
@@ -31,16 +32,19 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 		accessToken, err := dc.GetOnlyAccessToken(code)
 		if err != nil {
 			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
+			log.Println(err.Error())
 			return
 		}
 		user, err := GetUserData(accessToken)
 		if err != nil {
 			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
+			log.Println(err.Error())
 			return
 		}
 		guildMemberData, err := cfg.getUserGuildData(accessToken)
 		if err != nil {
 			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
+			log.Println(err.Error())
 			return
 		}
 		roles := guildMemberData.Roles
@@ -58,6 +62,7 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 		signedSessionToken, err := auth.CreateJWT(user.UserID, cfg.sessionSecret)
 		if err != nil {
 			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
+			log.Println(err.Error())
 			return
 		}
 		sessionCookie := http.Cookie{
@@ -74,6 +79,7 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 		ok, err = cfg.DB.IsExistingUser(r.Context(), pgtype.Text{String: user.UserID, Valid: true})
 		if err != nil {
 			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
+			log.Println(err.Error())
 			return
 		}
 		if ok {
@@ -101,6 +107,7 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 		})
 		if err != nil {
 			http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
+			log.Println(err.Error())
 			return
 		}
 		w.Header().Add("Set-Cookie", sessionCookie.String())

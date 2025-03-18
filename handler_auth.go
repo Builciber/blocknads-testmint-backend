@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -20,14 +21,17 @@ func (cfg *apiConfig) handler_auth(dc *disgoauth.Client) http.HandlerFunc {
 			if err != nil {
 				if err.Error() == "session is invalid or expired" {
 					http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, "unauthorized"), http.StatusFound)
+					log.Println(err.Error())
 					return
 				}
 				http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
+				log.Println(err.Error())
 				return
 			}
 			minter, err := cfg.DB.GetWhitelistMinterById(r.Context(), pgtype.Text{String: discordID, Valid: true})
 			if err != nil {
 				http.Redirect(w, r, fmt.Sprintf("%s?status=failed&reason=%s", cfg.clientCallbackURL, url.QueryEscape("internal server error")), http.StatusFound)
+				log.Println(err.Error())
 				return
 			}
 			http.Redirect(w, r, fmt.Sprintf("%s?status=success&username=%s&avatar=%s&userid=%s", cfg.clientCallbackURL, minter.DiscordUsername.String, minter.AvatarHash.String, minter.DiscordID.String), http.StatusFound)
