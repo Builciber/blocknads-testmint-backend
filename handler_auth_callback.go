@@ -68,13 +68,13 @@ func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFu
 		sessionCookie := http.Cookie{
 			Name:       "mint-session",
 			Value:      signedSessionToken,
-			Expires:    time.Now().UTC().Add(30 * time.Minute),
+			Expires:    time.Now().UTC().Add(120 * time.Minute),
 			Domain:     cfg.domain,
 			Path:       "/",
 			HttpOnly:   true,
 			Secure:     true,
 			SameSite:   http.SameSiteNoneMode,
-			RawExpires: time.Now().UTC().Add(30 * time.Minute).String(),
+			RawExpires: time.Now().UTC().Add(120 * time.Minute).String(),
 		}
 		ok, err = cfg.DB.IsExistingUser(r.Context(), pgtype.Text{String: user.UserID, Valid: true})
 		if err != nil {
