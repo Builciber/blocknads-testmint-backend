@@ -13,7 +13,7 @@ import (
 	"github.com/realTristan/disgoauth"
 )
 
-func (cfg *apiConfig) handler_auth(dc *disgoauth.Client) http.HandlerFunc {
+func (cfg *apiConfig) handlerAuth(dc *disgoauth.Client) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("mint-session")
 		if err == nil {

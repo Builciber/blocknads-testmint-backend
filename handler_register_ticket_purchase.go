@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Builciber/blocknads-testmint-backend/internal/database"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -16,7 +17,7 @@ type registerTicketPurchaseReq struct {
 	NumTickets    uint8  `json:"num_tickets"`
 }
 
-func (cfg *apiConfig) handler_register_ticket_purchase(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handlerRegisterTicketPurchase(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -33,12 +34,22 @@ func (cfg *apiConfig) handler_register_ticket_purchase(w http.ResponseWriter, r 
 		http.Error(w, "Invalid wallet address", http.StatusBadRequest)
 		return
 	}
+	if reqBody.NumTickets < 1 || reqBody.NumTickets > 100 {
+		http.Error(w, "invalid number of tickets", http.StatusBadRequest)
+		return
+	}
+	currentTime := time.Now()
 	err = cfg.DB.CreateTicketBuyer(r.Context(), database.CreateTicketBuyerParams{
 		WalletAddress: reqBody.WalletAddress,
 		NumTickets:    int16(reqBody.NumTickets),
-		CreatedAt:     pgtype.Timestamp{Time: time.Now(), Valid: true},
+		CreatedAt:     pgtype.Timestamp{Time: currentTime, Valid: true},
+		UpdatedAt:     pgtype.Timestamp{Time: currentTime, Valid: true},
 	})
-	if err != nil {
+	if pgErr, ok := err.(*pgconn.PgError); ok {
+		if pgErr.Code == "23505" {
+			http.Error(w, "user has purchased tickets before", http.StatusForbidden)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -43,3 +43,36 @@ func (r iteratorForCreateNonces) Err() error {
 func (q *Queries) CreateNonces(ctx context.Context, arg []CreateNoncesParams) (int64, error) {
 	return q.db.CopyFrom(ctx, []string{"whitelistminters"}, []string{"id", "nonce", "created_at", "updated_at"}, &iteratorForCreateNonces{rows: arg})
 }
+
+// iteratorForCreateRaffleWinnersForTx implements pgx.CopyFromSource.
+type iteratorForCreateRaffleWinnersForTx struct {
+	rows                 []CreateRaffleWinnersForTxParams
+	skippedFirstNextCall bool
+}
+
+func (r *iteratorForCreateRaffleWinnersForTx) Next() bool {
+	if len(r.rows) == 0 {
+		return false
+	}
+	if !r.skippedFirstNextCall {
+		r.skippedFirstNextCall = true
+		return true
+	}
+	r.rows = r.rows[1:]
+	return len(r.rows) > 0
+}
+
+func (r iteratorForCreateRaffleWinnersForTx) Values() ([]interface{}, error) {
+	return []interface{}{
+		r.rows[0].WalletAddress,
+		r.rows[0].Nonce,
+	}, nil
+}
+
+func (r iteratorForCreateRaffleWinnersForTx) Err() error {
+	return nil
+}
+
+func (q *Queries) CreateRaffleWinnersForTx(ctx context.Context, arg []CreateRaffleWinnersForTxParams) (int64, error) {
+	return q.db.CopyFrom(ctx, []string{"rafflewinners"}, []string{"wallet_address", "nonce"}, &iteratorForCreateRaffleWinnersForTx{rows: arg})
+}

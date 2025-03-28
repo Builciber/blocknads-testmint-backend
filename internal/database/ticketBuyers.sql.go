@@ -12,18 +12,23 @@ import (
 )
 
 const addRaffleMinterNonce = `-- name: AddRaffleMinterNonce :exec
-UPDATE ticketBuyers SET wallet_address = $2
+UPDATE ticketBuyers SET nonce = $2
 WHERE wallet_address = $1
 `
 
 type AddRaffleMinterNonceParams struct {
-	WalletAddress   string
-	WalletAddress_2 string
+	WalletAddress string
+	Nonce         pgtype.Int2
 }
 
 func (q *Queries) AddRaffleMinterNonce(ctx context.Context, arg AddRaffleMinterNonceParams) error {
-	_, err := q.db.Exec(ctx, addRaffleMinterNonce, arg.WalletAddress, arg.WalletAddress_2)
+	_, err := q.db.Exec(ctx, addRaffleMinterNonce, arg.WalletAddress, arg.Nonce)
 	return err
+}
+
+type CreateRaffleWinnersForTxParams struct {
+	WalletAddress string
+	Nonce         int16
 }
 
 const createTicketBuyer = `-- name: CreateTicketBuyer :exec
@@ -50,13 +55,55 @@ func (q *Queries) CreateTicketBuyer(ctx context.Context, arg CreateTicketBuyerPa
 	return err
 }
 
-const getRaffleMinter = `-- name: GetRaffleMinter :one
+const getAllTicketBuyers = `-- name: GetAllTicketBuyers :many
+SELECT wallet_address, num_tickets FROM ticketBuyers
+ORDER BY num_tickets ASC
+`
+
+type GetAllTicketBuyersRow struct {
+	WalletAddress string
+	NumTickets    int16
+}
+
+func (q *Queries) GetAllTicketBuyers(ctx context.Context) ([]GetAllTicketBuyersRow, error) {
+	rows, err := q.db.Query(ctx, getAllTicketBuyers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAllTicketBuyersRow
+	for rows.Next() {
+		var i GetAllTicketBuyersRow
+		if err := rows.Scan(&i.WalletAddress, &i.NumTickets); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getNumTickets = `-- name: GetNumTickets :one
+SELECT num_tickets FROM ticketBuyers
+WHERE wallet_address = $1
+`
+
+func (q *Queries) GetNumTickets(ctx context.Context, walletAddress string) (int16, error) {
+	row := q.db.QueryRow(ctx, getNumTickets, walletAddress)
+	var num_tickets int16
+	err := row.Scan(&num_tickets)
+	return num_tickets, err
+}
+
+const getTicketBuyer = `-- name: GetTicketBuyer :one
 SELECT wallet_address, nonce, num_tickets, created_at, updated_at FROM ticketBuyers
 WHERE wallet_address = $1
 `
 
-func (q *Queries) GetRaffleMinter(ctx context.Context, walletAddress string) (Ticketbuyer, error) {
-	row := q.db.QueryRow(ctx, getRaffleMinter, walletAddress)
+func (q *Queries) GetTicketBuyer(ctx context.Context, walletAddress string) (Ticketbuyer, error) {
+	row := q.db.QueryRow(ctx, getTicketBuyer, walletAddress)
 	var i Ticketbuyer
 	err := row.Scan(
 		&i.WalletAddress,
@@ -66,4 +113,56 @@ func (q *Queries) GetRaffleMinter(ctx context.Context, walletAddress string) (Ti
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getUniqueWeights = `-- name: GetUniqueWeights :many
+SELECT DISTINCT num_tickets FROM ticketBuyers
+ORDER BY num_tickets ASC
+`
+
+func (q *Queries) GetUniqueWeights(ctx context.Context) ([]int16, error) {
+	rows, err := q.db.Query(ctx, getUniqueWeights)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int16
+	for rows.Next() {
+		var num_tickets int16
+		if err := rows.Scan(&num_tickets); err != nil {
+			return nil, err
+		}
+		items = append(items, num_tickets)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateNumTickets = `-- name: UpdateNumTickets :exec
+UPDATE ticketBuyers SET num_tickets = $2, updated_at = $3
+WHERE wallet_address = $1
+`
+
+type UpdateNumTicketsParams struct {
+	WalletAddress string
+	NumTickets    int16
+	UpdatedAt     pgtype.Timestamp
+}
+
+func (q *Queries) UpdateNumTickets(ctx context.Context, arg UpdateNumTicketsParams) error {
+	_, err := q.db.Exec(ctx, updateNumTickets, arg.WalletAddress, arg.NumTickets, arg.UpdatedAt)
+	return err
+}
+
+const updateTicketBuyersNonceForTx = `-- name: UpdateTicketBuyersNonceForTx :exec
+UPDATE ticketBuyers SET nonce = raffleWinners.nonce
+FROM raffleWinners
+WHERE ticketBuyers.wallet_address = raffleWinners.wallet_address
+`
+
+func (q *Queries) UpdateTicketBuyersNonceForTx(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, updateTicketBuyersNonceForTx)
+	return err
 }

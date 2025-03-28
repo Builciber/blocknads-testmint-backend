@@ -8,6 +8,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Rafflewinner struct {
+	WalletAddress string
+	Nonce         int16
+}
+
 type Ticketbuyer struct {
 	WalletAddress string
 	Nonce         pgtype.Int2

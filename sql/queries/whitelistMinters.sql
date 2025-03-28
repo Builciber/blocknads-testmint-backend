@@ -7,7 +7,7 @@ SELECT * FROM whitelistMinters
 WHERE discord_id = $1;
 
 -- name: AddWhitelistMintWallet :exec
-UPDATE whitelistMinters SET wallet_address = $2
+UPDATE whitelistMinters SET wallet_address = $2, updated_at = $3
 WHERE discord_id = $1;
 
 -- name: UpdateWhitelistMinterAfterAuth :exec
@@ -22,3 +22,6 @@ SELECT EXISTS (SELECT 1 FROM whitelistMinters WHERE whitelistMinters.discord_id 
 
 -- name: IsExistingUser :one
 SELECT EXISTS (SELECT 1 FROM whitelistMinters WHERE whitelistMinters.discord_id = $1);
+
+-- name: useNonce :exec
+UPDATE whitelistMinters SET nonce_used = TRUE WHERE wallet_address = $1;

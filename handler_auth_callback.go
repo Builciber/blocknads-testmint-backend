@@ -13,7 +13,7 @@ import (
 	"github.com/realTristan/disgoauth"
 )
 
-func (cfg *apiConfig) handler_auth_callback(dc *disgoauth.Client) http.HandlerFunc {
+func (cfg *apiConfig) handlerAuthCallback(dc *disgoauth.Client) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		nonce := r.URL.Query().Get("state")
 		cfg.mut.Lock()

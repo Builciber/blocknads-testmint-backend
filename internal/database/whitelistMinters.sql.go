@@ -12,17 +12,18 @@ import (
 )
 
 const addWhitelistMintWallet = `-- name: AddWhitelistMintWallet :exec
-UPDATE whitelistMinters SET wallet_address = $2
+UPDATE whitelistMinters SET wallet_address = $2, updated_at = $3
 WHERE discord_id = $1
 `
 
 type AddWhitelistMintWalletParams struct {
 	DiscordID     pgtype.Text
 	WalletAddress pgtype.Text
+	UpdatedAt     pgtype.Timestamp
 }
 
 func (q *Queries) AddWhitelistMintWallet(ctx context.Context, arg AddWhitelistMintWalletParams) error {
-	_, err := q.db.Exec(ctx, addWhitelistMintWallet, arg.DiscordID, arg.WalletAddress)
+	_, err := q.db.Exec(ctx, addWhitelistMintWallet, arg.DiscordID, arg.WalletAddress, arg.UpdatedAt)
 	return err
 }
 
@@ -112,5 +113,14 @@ func (q *Queries) UpdateWhitelistMinterAfterAuth(ctx context.Context, arg Update
 		arg.AvatarHash,
 		arg.UpdatedAt,
 	)
+	return err
+}
+
+const useNonce = `-- name: useNonce :exec
+UPDATE whitelistMinters SET nonce_used = TRUE WHERE wallet_address = $1
+`
+
+func (q *Queries) useNonce(ctx context.Context, walletAddress pgtype.Text) error {
+	_, err := q.db.Exec(ctx, useNonce, walletAddress)
 	return err
 }

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/Builciber/blocknads-testmint-backend/internal/auth"
 	"github.com/Builciber/blocknads-testmint-backend/internal/database"
@@ -27,7 +28,7 @@ type registerWhitelistMintersResp struct {
 	Signature string `json:"signature"`
 }
 
-func (cfg *apiConfig) handler_register_whitelist_minter(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handlerRegisterWhitelistMinter(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("mint-session")
 	if err != nil {
 		http.Error(w, "session is missing", http.StatusUnauthorized)
@@ -103,6 +104,10 @@ func (cfg *apiConfig) handler_register_whitelist_minter(w http.ResponseWriter, r
 			WalletAddress: pgtype.Text{
 				String: reqBody.WalletAddress,
 				Valid:  true,
+			},
+			UpdatedAt: pgtype.Timestamp{
+				Time:  time.Now(),
+				Valid: true,
 			},
 		})
 		if err != nil {

@@ -33,6 +33,7 @@ type apiConfig struct {
 	contractAddress   string
 	ownerPK           string
 	DB                *database.Queries
+	dbConn            *pgxpool.Pool
 	mut               *sync.RWMutex
 	oauthStates       map[string]bool
 }
@@ -69,6 +70,7 @@ func main() {
 	cfg := apiConfig{
 		chainID:           int64(chainID),
 		DB:                dbQueries,
+		dbConn:            db,
 		sessionSecret:     sessionSecret,
 		mut:               &sync.RWMutex{},
 		oauthStates:       make(map[string]bool),
@@ -103,20 +105,24 @@ func main() {
 		RedirectURI:  fmt.Sprintf("https://%s/api/auth/callback", cfg.domain),
 		Scopes:       []string{disgoauth.ScopeIdentify, "guilds.members.read"},
 	})
-	apiMux.Get("/auth", cfg.handler_auth(dc))
-	apiMux.Get("/auth/callback", cfg.handler_auth_callback(dc))
-	apiMux.Get("/auth/logout", cfg.handler_logout)
-	apiMux.Post("/register/raffle_minter", cfg.handler_register_raffle_minter)
-	apiMux.Post("/register/ticket_purchase", cfg.handler_register_ticket_purchase)
-	apiMux.Post("/register/whitelist_minter", cfg.handler_register_whitelist_minter)
+	apiMux.Get("/auth", cfg.handlerAuth(dc))
+	apiMux.Get("/auth/callback", cfg.handlerAuthCallback(dc))
+	apiMux.Get("/auth/logout", cfg.handlerLogout)
+	apiMux.Get("/tickets/bought/{walletAddress}", cfg.handlerGetNumTickets)
+	apiMux.Post("/register/raffle_minter", cfg.handlerRegisterRaffleMinter)
+	apiMux.Post("/register/ticket_purchase", cfg.handlerRegisterTicketPurchase)
+	apiMux.Post("/register/whitelist_minter", cfg.handlerRegisterWhitelistMinter)
+	apiMux.Post("/tickets/topup", cfg.handlerTicketTopup)
 	//apiMux.Post("/test/whitelistMint", cfg.handlerWhitelistMintTest)
 	//apiMux.Get("/test/issueSessionToken", cfg.handlerIssueSessionToken())
+	//apiMux.Get("/test", cfg.quickTest)
+	apiMux.Get("/raffle", cfg.raffler)
 	apiMux.Mount("/api/", apiMux)
 	server := http.Server{
 		Addr:    "0.0.0.0:8080",
 		Handler: apiMux,
 	}
-	log.Println("Starting server on localhost at port 8080")
+	log.Println("Started server on localhost at port 8080")
 	err = server.ListenAndServe()
 	log.Fatal(err)
 }

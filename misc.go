@@ -167,9 +167,8 @@ func (cfg *apiConfig) writeNonceToDB(numNonces int) error {
 	return nil
 }
 
-func pollContractEvent(cfg *apiConfig, interval time.Duration) {
+func pollMintedEvent(minterChan chan<- common.Address, cfg *apiConfig, interval time.Duration) {
 	tickChan := time.NewTicker(interval).C
-	log.Println("Started contract event polling")
 	w, err := web3.NewWeb3(cfg.rpcUrl)
 	w.Eth.SetChainId(cfg.chainID)
 	if err != nil {
@@ -179,28 +178,47 @@ func pollContractEvent(cfg *apiConfig, interval time.Duration) {
 	toBlock := cfg.wlMintStartBlock + 9
 	eventSignature := "Minted(address,uint256)"
 	topicOne := crypto.Keccak256([]byte(eventSignature))
+	log.Println("Started Minted event polling")
 	for range tickChan {
 		filter := types.Fliter{
 			Address:   common.HexToAddress(cfg.contractAddress),
 			FromBlock: startBlockasHexStr,
 			ToBlock:   "0x" + strconv.FormatUint(toBlock, 16),
-			Topics:    []string{common.Bytes2Hex(topicOne)},
+			Topics:    []string{"0x" + common.Bytes2Hex(topicOne)},
 		}
 		events, err := w.Eth.GetLogs(&filter)
 		if err != nil {
 			continue
 		}
-		addresses := make([]string, len(events))
+		addresses := make([]common.Address, len(events))
 		for i, event := range events {
-			params, err := w.Utils.DecodeParameters([]string{"address, uint256"}, []byte(event.Data))
+			params, err := w.Utils.DecodeParameters([]string{"address"}, []byte(event.Topics[1]))
 			if err != nil {
 				continue
 			}
-			minterAddress, ok := params[0].(string)
+			minterAddress, ok := params[0].(common.Address)
 			if !ok {
 				continue
 			}
 			addresses[i] = minterAddress
 		}
 	}
+}
+
+func (cfg *apiConfig) updateTicketBuyersNonceTx(ctx context.Context, raffleWinners []database.CreateRaffleWinnersForTxParams) error {
+	tx, err := cfg.dbConn.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	qtx := cfg.DB.WithTx(tx)
+	_, err = qtx.CreateRaffleWinnersForTx(ctx, raffleWinners)
+	if err != nil {
+		return err
+	}
+	err = qtx.UpdateTicketBuyersNonceForTx(ctx)
+	if err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }

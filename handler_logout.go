@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-func (cfg *apiConfig) handler_logout(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handlerLogout(w http.ResponseWriter, r *http.Request) {
 	sessionCookie := http.Cookie{
 		Name:     "mint-session",
 		MaxAge:   -1,

@@ -4,10 +4,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"math/big"
 	"net/http"
 	"regexp"
 
 	"github.com/chenzhijie/go-web3"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type registerRaffletMinterReq struct {
@@ -19,7 +22,7 @@ type registerRaffleMinterResp struct {
 	Signature string `json:"signature"`
 }
 
-func (cfg *apiConfig) handler_register_raffle_minter(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handlerRegisterRaffleMinter(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -36,7 +39,7 @@ func (cfg *apiConfig) handler_register_raffle_minter(w http.ResponseWriter, r *h
 		http.Error(w, "Invalid wallet address", http.StatusBadRequest)
 		return
 	}
-	minter, err := cfg.DB.GetRaffleMinter(r.Context(), reqBody.WalletAddress)
+	minter, err := cfg.DB.GetTicketBuyer(r.Context(), reqBody.WalletAddress)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -50,23 +53,25 @@ func (cfg *apiConfig) handler_register_raffle_minter(w http.ResponseWriter, r *h
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	wb.Eth.SetChainId(cfg.chainID)
 	err = wb.Eth.SetAccount(cfg.signerPk)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	msg, err := wb.Utils.EncodeParameters([]string{"uint256", "address", "uint256"}, []any{minter.Nonce, reqBody.WalletAddress, cfg.chainID})
+	msg, err := wb.Utils.EncodeParameters([]string{"uint256", "address", "uint256"}, []any{big.NewInt(int64(minter.Nonce.Int16)), common.HexToAddress(reqBody.WalletAddress), big.NewInt(cfg.chainID)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sig, err := wb.Eth.SignText(msg)
+	msgHash := crypto.Keccak256(msg)
+	sig, err := wb.Eth.SignText(msgHash)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	respondWithJSON(w, http.StatusOK, registerRaffleMinterResp{
-		Signature: hex.EncodeToString(sig),
+		Signature: "0x" + hex.EncodeToString(sig),
 		Nonce:     minter.Nonce.Int16,
 	})
 }
