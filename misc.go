@@ -216,7 +216,7 @@ func (cfg *apiConfig) updateTicketBuyersNonceTx(ctx context.Context, raffleWinne
 	if err != nil {
 		return err
 	}
-	err = qtx.UpdateTicketBuyersNonceForTx(ctx)
+	err = qtx.UpdateTicketBuyersNonceForTx(ctx, pgtype.Timestamp{Time: time.Now(), Valid: true})
 	if err != nil {
 		return err
 	}

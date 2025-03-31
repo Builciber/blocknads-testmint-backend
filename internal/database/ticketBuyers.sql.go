@@ -12,18 +12,27 @@ import (
 )
 
 const addRaffleMinterNonce = `-- name: AddRaffleMinterNonce :exec
-UPDATE ticketBuyers SET nonce = $2
+UPDATE ticketBuyers SET nonce = $2, updated_at = $3
 WHERE wallet_address = $1
 `
 
 type AddRaffleMinterNonceParams struct {
 	WalletAddress string
 	Nonce         pgtype.Int2
+	UpdatedAt     pgtype.Timestamp
 }
 
 func (q *Queries) AddRaffleMinterNonce(ctx context.Context, arg AddRaffleMinterNonceParams) error {
-	_, err := q.db.Exec(ctx, addRaffleMinterNonce, arg.WalletAddress, arg.Nonce)
+	_, err := q.db.Exec(ctx, addRaffleMinterNonce, arg.WalletAddress, arg.Nonce, arg.UpdatedAt)
 	return err
+}
+
+type CreateFakeTicketBuyersParams struct {
+	WalletAddress string
+	Nonce         pgtype.Int2
+	NumTickets    int16
+	CreatedAt     pgtype.Timestamp
+	UpdatedAt     pgtype.Timestamp
 }
 
 type CreateRaffleWinnersForTxParams struct {
@@ -140,6 +149,17 @@ func (q *Queries) GetUniqueWeights(ctx context.Context) ([]int16, error) {
 	return items, nil
 }
 
+const isRaffleWinner = `-- name: IsRaffleWinner :one
+SELECT EXISTS (SELECT nonce FROM ticketBuyers WHERE wallet_address = $1 AND nonce IS NOT NULL)
+`
+
+func (q *Queries) IsRaffleWinner(ctx context.Context, walletAddress string) (bool, error) {
+	row := q.db.QueryRow(ctx, isRaffleWinner, walletAddress)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const updateNumTickets = `-- name: UpdateNumTickets :exec
 UPDATE ticketBuyers SET num_tickets = $2, updated_at = $3
 WHERE wallet_address = $1
@@ -157,12 +177,12 @@ func (q *Queries) UpdateNumTickets(ctx context.Context, arg UpdateNumTicketsPara
 }
 
 const updateTicketBuyersNonceForTx = `-- name: UpdateTicketBuyersNonceForTx :exec
-UPDATE ticketBuyers SET nonce = raffleWinners.nonce
+UPDATE ticketBuyers SET nonce = raffleWinners.nonce, updated_at = $1
 FROM raffleWinners
 WHERE ticketBuyers.wallet_address = raffleWinners.wallet_address
 `
 
-func (q *Queries) UpdateTicketBuyersNonceForTx(ctx context.Context) error {
-	_, err := q.db.Exec(ctx, updateTicketBuyersNonceForTx)
+func (q *Queries) UpdateTicketBuyersNonceForTx(ctx context.Context, updatedAt pgtype.Timestamp) error {
+	_, err := q.db.Exec(ctx, updateTicketBuyersNonceForTx, updatedAt)
 	return err
 }

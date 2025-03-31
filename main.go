@@ -109,6 +109,7 @@ func main() {
 	apiMux.Get("/auth/callback", cfg.handlerAuthCallback(dc))
 	apiMux.Get("/auth/logout", cfg.handlerLogout)
 	apiMux.Get("/tickets/bought/{walletAddress}", cfg.handlerGetNumTickets)
+	apiMux.Get("/raffle/check/{walletAddress}", cfg.handlerCheckRaffleWinner)
 	apiMux.Post("/register/raffle_minter", cfg.handlerRegisterRaffleMinter)
 	apiMux.Post("/register/ticket_purchase", cfg.handlerRegisterTicketPurchase)
 	apiMux.Post("/register/whitelist_minter", cfg.handlerRegisterWhitelistMinter)
@@ -116,6 +117,7 @@ func main() {
 	//apiMux.Post("/test/whitelistMint", cfg.handlerWhitelistMintTest)
 	//apiMux.Get("/test/issueSessionToken", cfg.handlerIssueSessionToken())
 	//apiMux.Get("/test", cfg.quickTest)
+	//apiMux.Post("/genFakeTicketBuyers", cfg.generateFakeTicketBuyers)
 	apiMux.Get("/raffle", cfg.raffler)
 	apiMux.Mount("/api/", apiMux)
 	server := http.Server{

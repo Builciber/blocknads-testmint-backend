@@ -3,3 +3,4 @@ out
 whitelistMintTest.go
 issueSessionTokenTest.go
 test.go
+generateFakeTicketBuyers.go

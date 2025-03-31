@@ -9,6 +9,42 @@ import (
 	"context"
 )
 
+// iteratorForCreateFakeTicketBuyers implements pgx.CopyFromSource.
+type iteratorForCreateFakeTicketBuyers struct {
+	rows                 []CreateFakeTicketBuyersParams
+	skippedFirstNextCall bool
+}
+
+func (r *iteratorForCreateFakeTicketBuyers) Next() bool {
+	if len(r.rows) == 0 {
+		return false
+	}
+	if !r.skippedFirstNextCall {
+		r.skippedFirstNextCall = true
+		return true
+	}
+	r.rows = r.rows[1:]
+	return len(r.rows) > 0
+}
+
+func (r iteratorForCreateFakeTicketBuyers) Values() ([]interface{}, error) {
+	return []interface{}{
+		r.rows[0].WalletAddress,
+		r.rows[0].Nonce,
+		r.rows[0].NumTickets,
+		r.rows[0].CreatedAt,
+		r.rows[0].UpdatedAt,
+	}, nil
+}
+
+func (r iteratorForCreateFakeTicketBuyers) Err() error {
+	return nil
+}
+
+func (q *Queries) CreateFakeTicketBuyers(ctx context.Context, arg []CreateFakeTicketBuyersParams) (int64, error) {
+	return q.db.CopyFrom(ctx, []string{"ticketbuyers"}, []string{"wallet_address", "nonce", "num_tickets", "created_at", "updated_at"}, &iteratorForCreateFakeTicketBuyers{rows: arg})
+}
+
 // iteratorForCreateNonces implements pgx.CopyFromSource.
 type iteratorForCreateNonces struct {
 	rows                 []CreateNoncesParams

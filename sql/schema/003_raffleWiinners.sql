@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS raffleWinners(
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS ticketBuyers;
+DROP TABLE IF EXISTS raffleWinners;
