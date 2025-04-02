@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/Builciber/blocknads-testmint-backend/internal/database"
 	"github.com/go-chi/chi/v5"
@@ -105,11 +106,15 @@ func main() {
 		RedirectURI:  fmt.Sprintf("https://%s/api/auth/callback", cfg.domain),
 		Scopes:       []string{disgoauth.ScopeIdentify, "guilds.members.read"},
 	})
+	broadcastChan := make(chan uint64)
+	tokenIdChan := make(chan uint64)
 	apiMux.Get("/auth", cfg.handlerAuth(dc))
 	apiMux.Get("/auth/callback", cfg.handlerAuthCallback(dc))
 	apiMux.Get("/auth/logout", cfg.handlerLogout)
 	apiMux.Get("/tickets/bought/{walletAddress}", cfg.handlerGetNumTickets)
 	apiMux.Get("/raffle/check/{walletAddress}", cfg.handlerCheckRaffleWinner)
+	apiMux.Get("/stream/currentBlockNumber", cfg.handlerBlockUpdates(broadcastChan))
+	apiMux.Get("/stream/totalMinted", cfg.handlerMintedEventUpdate(tokenIdChan))
 	apiMux.Post("/register/raffle_minter", cfg.handlerRegisterRaffleMinter)
 	apiMux.Post("/register/ticket_purchase", cfg.handlerRegisterTicketPurchase)
 	apiMux.Post("/register/whitelist_minter", cfg.handlerRegisterWhitelistMinter)
@@ -124,6 +129,8 @@ func main() {
 		Addr:    "0.0.0.0:8080",
 		Handler: apiMux,
 	}
+	go pollBlockNumber(&cfg, broadcastChan, 10*time.Second)
+	go pollMintedEvent(&cfg, tokenIdChan, 10*time.Second)
 	log.Println("Started server on localhost at port 8080")
 	err = server.ListenAndServe()
 	log.Fatal(err)
