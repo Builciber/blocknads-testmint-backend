@@ -83,7 +83,7 @@ func (cfg *apiConfig) handlerStreamEvents(clients map[*client]struct{}, clientMu
 	return http.HandlerFunc(fn)
 }
 
-func pollBlockNumber(cfg *apiConfig, clients map[*client]struct{}, clientMu *sync.Mutex, interval time.Duration) {
+func pollBlockNumber(cfg *apiConfig, clients map[*client]struct{}, clientMu *sync.Mutex, interval time.Duration, raffleStartChan chan<- uint64, hasRaffled *bool) {
 	tickChan := time.NewTicker(interval).C
 	w, err := web3.NewWeb3(cfg.rpcUrl)
 	w.Eth.SetChainId(cfg.chainID)
@@ -100,6 +100,10 @@ func pollBlockNumber(cfg *apiConfig, clients map[*client]struct{}, clientMu *syn
 			data:               blockNumber,
 			isBlockNumberEvent: true,
 		})
+		if *hasRaffled {
+			continue
+		}
+		raffleStartChan <- blockNumber
 	}
 }
 

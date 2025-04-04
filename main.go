@@ -33,6 +33,7 @@ type apiConfig struct {
 	rpcUrl            string
 	contractAddress   string
 	ownerPK           string
+	rafflePeriodStart uint64
 	DB                *database.Queries
 	dbConn            *pgxpool.Pool
 	mut               *sync.RWMutex
@@ -62,6 +63,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	rafflePeriodStart, err := strconv.ParseUint(os.Getenv("RAFFLE_PERIOD_START"), 10, 0)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	db, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -87,6 +92,7 @@ func main() {
 		ownerPK:           ownerPK,
 		wlMintStartBlock:  wlMintStartBlock,
 		contractAddress:   contractAddress,
+		rafflePeriodStart: rafflePeriodStart,
 	}
 	err = cfg.writeNonceToDB(99)
 	if err != nil {
@@ -108,6 +114,7 @@ func main() {
 	})
 	clientMap := make(map[*client]struct{})
 	clientMu := &sync.Mutex{}
+	raffleStartChan := make(chan uint64, 1)
 	apiMux.Get("/auth", cfg.handlerAuth(dc))
 	apiMux.Get("/auth/callback", cfg.handlerAuthCallback(dc))
 	apiMux.Get("/auth/logout", cfg.handlerLogout)
@@ -122,15 +129,21 @@ func main() {
 	//apiMux.Get("/test/issueSessionToken", cfg.handlerIssueSessionToken())
 	//apiMux.Get("/test", cfg.quickTest)
 	//apiMux.Post("/genFakeTicketBuyers", cfg.generateFakeTicketBuyers)
-	apiMux.Get("/raffle", cfg.raffler)
 	apiMux.Mount("/api/", apiMux)
+	hasRaffled, err := cfg.DB.GetRaffleState(context.Background())
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	if !hasRaffled {
+		go listenForRaffleStart(&cfg, raffleStartChan, &hasRaffled)
+	}
+	go pollBlockNumber(&cfg, clientMap, clientMu, 10*time.Second, raffleStartChan, &hasRaffled)
+	go pollMintedEvent(&cfg, clientMap, clientMu, 10*time.Second)
+	log.Println("Started server on localhost at port 8080")
 	server := http.Server{
 		Addr:    "0.0.0.0:8080",
 		Handler: apiMux,
 	}
-	go pollBlockNumber(&cfg, clientMap, clientMu, 10*time.Second)
-	go pollMintedEvent(&cfg, clientMap, clientMu, 10*time.Second)
-	log.Println("Started server on localhost at port 8080")
 	err = server.ListenAndServe()
 	log.Fatal(err)
 }

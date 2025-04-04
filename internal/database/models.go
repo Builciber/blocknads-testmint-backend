@@ -13,6 +13,11 @@ type Rafflewinner struct {
 	Nonce         int16
 }
 
+type Rafflingstate struct {
+	ID         int16
+	HasRaffled bool
+}
+
 type Ticketbuyer struct {
 	WalletAddress string
 	Nonce         pgtype.Int2
@@ -22,6 +27,7 @@ type Ticketbuyer struct {
 }
 
 type Totalminted struct {
+	ID              int16
 	TotalNftsMinted int16
 }
 

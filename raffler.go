@@ -6,7 +6,6 @@ import (
 	"math"
 	"math/big"
 	"math/rand/v2"
-	"net/http"
 	"slices"
 
 	"github.com/Builciber/blocknads-testmint-backend/internal/database"
@@ -45,7 +44,7 @@ func weightedRandomSelect(addressWeightGrouping [][]walletAddress, weights []int
 	return selectedWallet
 }
 
-func (cfg *apiConfig) raffler(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) raffler() {
 	ticketBuyers, err := cfg.DB.GetAllTicketBuyers(context.Background())
 	if err != nil {
 		log.Fatal(err.Error())
@@ -106,7 +105,6 @@ func (cfg *apiConfig) raffler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Fatal(err.Error())
 		}
-		w.WriteHeader(http.StatusOK)
 		return
 	}
 	// Handle the case where the total number of ticket buyers is greater than the number of
@@ -149,5 +147,16 @@ func (cfg *apiConfig) raffler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	w.WriteHeader(http.StatusOK)
+}
+
+func listenForRaffleStart(cfg *apiConfig, raffleStartChan <-chan uint64, hasRaffled *bool) {
+	log.Println("Started listening for raffle start event")
+	for blockNumber := range raffleStartChan {
+		if blockNumber >= cfg.rafflePeriodStart {
+			*hasRaffled = true
+			cfg.raffler()
+			cfg.DB.UpdateRaffleState(context.Background(), true)
+			return
+		}
+	}
 }
