@@ -51,7 +51,7 @@ type CreateNoncesParams struct {
 }
 
 const getWhitelistMinterById = `-- name: GetWhitelistMinterById :one
-SELECT id, discord_id, discord_username, wallet_address, avatar_hash, nonce, nonce_used, created_at, updated_at FROM whitelistMinters
+SELECT id, discord_id, discord_username, wallet_address, avatar_hash, nonce, created_at, updated_at FROM whitelistMinters
 WHERE discord_id = $1
 `
 
@@ -65,7 +65,6 @@ func (q *Queries) GetWhitelistMinterById(ctx context.Context, discordID pgtype.T
 		&i.WalletAddress,
 		&i.AvatarHash,
 		&i.Nonce,
-		&i.NonceUsed,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -113,14 +112,5 @@ func (q *Queries) UpdateWhitelistMinterAfterAuth(ctx context.Context, arg Update
 		arg.AvatarHash,
 		arg.UpdatedAt,
 	)
-	return err
-}
-
-const useNonce = `-- name: useNonce :exec
-UPDATE whitelistMinters SET nonce_used = TRUE WHERE wallet_address = $1
-`
-
-func (q *Queries) useNonce(ctx context.Context, walletAddress pgtype.Text) error {
-	_, err := q.db.Exec(ctx, useNonce, walletAddress)
 	return err
 }

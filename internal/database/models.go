@@ -21,6 +21,10 @@ type Ticketbuyer struct {
 	UpdatedAt     pgtype.Timestamp
 }
 
+type Totalminted struct {
+	TotalNftsMinted int16
+}
+
 type Whitelistminter struct {
 	ID              pgtype.UUID
 	DiscordID       pgtype.Text
@@ -28,7 +32,6 @@ type Whitelistminter struct {
 	WalletAddress   pgtype.Text
 	AvatarHash      pgtype.Text
 	Nonce           int16
-	NonceUsed       bool
 	CreatedAt       pgtype.Timestamp
 	UpdatedAt       pgtype.Timestamp
 }

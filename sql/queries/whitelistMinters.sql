@@ -22,6 +22,3 @@ SELECT EXISTS (SELECT 1 FROM whitelistMinters WHERE whitelistMinters.discord_id 
 
 -- name: IsExistingUser :one
 SELECT EXISTS (SELECT 1 FROM whitelistMinters WHERE whitelistMinters.discord_id = $1);
-
--- name: useNonce :exec
-UPDATE whitelistMinters SET nonce_used = TRUE WHERE wallet_address = $1;
