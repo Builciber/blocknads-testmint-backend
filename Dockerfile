@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.21.4
+FROM golang:1.24.0
 
 # Set destination for COPY
 WORKDIR /app
@@ -12,7 +12,7 @@ RUN go mod download
 
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux go build -o ./server
+RUN CGO_ENABLED=0 GOOS=linux go build -o server
 
 # Optional:
 # To bind to a TCP port, runtime parameters must be supplied to the docker command.
