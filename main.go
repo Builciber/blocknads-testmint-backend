@@ -94,7 +94,7 @@ func main() {
 		contractAddress:   contractAddress,
 		rafflePeriodStart: rafflePeriodStart,
 	}
-	err = cfg.writeNonceToDB(99)
+	err = cfg.writeNonceToDB(99) //change to the correct number
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func main() {
 	})
 	clientMap := make(map[*client]struct{})
 	clientMu := &sync.Mutex{}
-	raffleStartChan := make(chan uint64, 1)
+	raffleStartChan := make(chan uint64, 10)
 	apiMux.Get("/auth", cfg.handlerAuth(dc))
 	apiMux.Get("/auth/callback", cfg.handlerAuthCallback(dc))
 	apiMux.Get("/auth/logout", cfg.handlerLogout)
