@@ -2,17 +2,15 @@ package main
 
 import (
 	"net/http"
+
+	"golang.org/x/time/rate"
 )
 
-func (cfg *apiConfig) validateIp(next http.Handler) http.Handler {
+func (cfg *apiConfig) ratelimit(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		allowedIpAdd := "100.28.201.155"
-		clientIp := r.RemoteAddr
-		if forwarded := r.Header.Get("x-Forwarded-For"); forwarded != "" {
-			clientIp = forwarded
-		}
-		if clientIp != allowedIpAdd {
-			http.Error(w, "forbidden", http.StatusForbidden)
+		limiter := rate.NewLimiter(10, 100)
+		if !limiter.Allow() {
+			http.Error(w, "too many requests", http.StatusTooManyRequests)
 			return
 		}
 		next.ServeHTTP(w, r)
