@@ -105,7 +105,7 @@ func main() {
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
-	}))
+	}), cfg.validateIp)
 	var dc *disgoauth.Client = disgoauth.Init(&disgoauth.Client{
 		ClientID:     clientId,
 		ClientSecret: clientSecret,

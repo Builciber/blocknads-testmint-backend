@@ -21,7 +21,5 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o server
 # https://docs.docker.com/engine/reference/builder/#expose
 EXPOSE 8080
 
-USER nobody
-
 # Run
 CMD ["./server"]
