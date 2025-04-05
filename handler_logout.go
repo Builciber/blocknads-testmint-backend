@@ -12,8 +12,8 @@ func (cfg *apiConfig) handlerLogout(w http.ResponseWriter, r *http.Request) {
 		Domain:   cfg.domain,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   true,
+		SameSite: http.SameSiteStrictMode,
 	}
 	w.Header().Add("Set-Cookie", sessionCookie.String())
 	http.Redirect(w, r, fmt.Sprintf("%s?status=success", cfg.clientCallbackURL), http.StatusFound)

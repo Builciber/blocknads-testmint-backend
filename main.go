@@ -94,7 +94,7 @@ func main() {
 		contractAddress:   contractAddress,
 		rafflePeriodStart: rafflePeriodStart,
 	}
-	err = cfg.writeNonceToDB(99) //change to the correct number
+	err = cfg.writeNonceToDB(1319) //change to the correct number
 	if err != nil {
 		log.Fatal(err)
 	}
