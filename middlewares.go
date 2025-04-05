@@ -6,7 +6,7 @@ import (
 
 func (cfg *apiConfig) validateIp(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		allowedIpAdd := "154.120.111.34"
+		allowedIpAdd := "100.28.201.155"
 		clientIp := r.RemoteAddr
 		if forwarded := r.Header.Get("x-Forwarded-For"); forwarded != "" {
 			clientIp = forwarded
