@@ -37,6 +37,8 @@ func broadcastEvent(clients map[*client]struct{}, mutex *sync.Mutex, event event
 	}
 }
 
+var currBlockNumber uint64
+
 func (cfg *apiConfig) handlerStreamEvents(clients map[*client]struct{}, clientMu *sync.Mutex) http.HandlerFunc {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -61,6 +63,10 @@ func (cfg *apiConfig) handlerStreamEvents(clients map[*client]struct{}, clientMu
 		}
 		fmt.Fprintf(w, "event: mint\ndata: %d\n\n", totalMinted)
 		flusher.Flush()
+		if currBlockNumber > 0 {
+			fmt.Fprintf(w, "event: blocknumber\ndata: %d\n\n", currBlockNumber)
+			flusher.Flush()
+		}
 		for {
 			select {
 			case event := <-client.eventChan:
@@ -96,6 +102,7 @@ func pollBlockNumber(cfg *apiConfig, clients map[*client]struct{}, clientMu *syn
 		if err != nil {
 			continue
 		}
+		currBlockNumber = blockNumber
 		broadcastEvent(clients, clientMu, event{
 			data:               blockNumber,
 			isBlockNumberEvent: true,
