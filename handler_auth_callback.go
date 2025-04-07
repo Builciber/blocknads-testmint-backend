@@ -69,7 +69,7 @@ func (cfg *apiConfig) handlerAuthCallback(dc *disgoauth.Client) http.HandlerFunc
 			Name:       "mint-session",
 			Value:      signedSessionToken,
 			Expires:    time.Now().UTC().Add(120 * time.Minute),
-			Domain:     cfg.domain,
+			Domain:     cfg.cookieDomain,
 			Path:       "/",
 			HttpOnly:   true,
 			Secure:     true,

@@ -33,6 +33,7 @@ type apiConfig struct {
 	rpcUrl            string
 	contractAddress   string
 	ownerPK           string
+	cookieDomain      string
 	rafflePeriodStart uint64
 	DB                *database.Queries
 	dbConn            *pgxpool.Pool
@@ -55,6 +56,7 @@ func main() {
 	rpcUrl := os.Getenv("RPC_URL")
 	contractAddress := os.Getenv("CONTRACT_ADDRESS")
 	ownerPK := os.Getenv("OWNER_PK")
+	cookieDomain := os.Getenv("COOKIE_DOMAIN")
 	chainID, err := strconv.Atoi(os.Getenv("CHAIN_ID"))
 	if err != nil {
 		log.Fatal(err.Error())
@@ -93,6 +95,7 @@ func main() {
 		wlMintStartBlock:  wlMintStartBlock,
 		contractAddress:   contractAddress,
 		rafflePeriodStart: rafflePeriodStart,
+		cookieDomain:      cookieDomain,
 	}
 	err = cfg.writeNonceToDB(1319) //change to the correct number
 	if err != nil {

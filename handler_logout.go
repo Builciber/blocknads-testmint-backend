@@ -9,7 +9,7 @@ func (cfg *apiConfig) handlerLogout(w http.ResponseWriter, r *http.Request) {
 	sessionCookie := http.Cookie{
 		Name:     "mint-session",
 		MaxAge:   -1,
-		Domain:   cfg.domain,
+		Domain:   cfg.cookieDomain,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
